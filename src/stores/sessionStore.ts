@@ -148,7 +148,7 @@ const sessionStore: StateCreator<
     },
     
     // Clear error
-    clearError: () => set({ error: null }),
+    clearError: () => { set({ error: null }); },
     
     // Handle session update
     handleSessionUpdate: (session: Session) => {

@@ -161,7 +161,7 @@ export const MCPManager: React.FC<MCPManagerProps> = ({
                 <Card>
                   <MCPAddServer
                     onServerAdded={handleServerAdded}
-                    onError={(message: string) => setToast({ message, type: "error" })}
+                    onError={(message: string) => { setToast({ message, type: "error" }); }}
                   />
                 </Card>
               </TabsContent>
@@ -171,7 +171,7 @@ export const MCPManager: React.FC<MCPManagerProps> = ({
                 <Card className="overflow-hidden">
                   <MCPImportExport
                     onImportCompleted={handleImportCompleted}
-                    onError={(message: string) => setToast({ message, type: "error" })}
+                    onError={(message: string) => { setToast({ message, type: "error" }); }}
                   />
                 </Card>
               </TabsContent>
@@ -186,7 +186,7 @@ export const MCPManager: React.FC<MCPManagerProps> = ({
           <Toast
             message={toast.message}
             type={toast.type}
-            onDismiss={() => setToast(null)}
+            onDismiss={() => { setToast(null); }}
           />
         )}
       </ToastContainer>

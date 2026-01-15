@@ -129,8 +129,7 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
   const [runId, setRunId] = useState<number | null>(null);
 
   // Filter out messages that shouldn't be displayed
-  const displayableMessages = React.useMemo(() => {
-    return messages.filter((message, index) => {
+  const displayableMessages = React.useMemo(() => messages.filter((message, index) => {
       // Skip meta messages that don't have meaningful content
       if (message.isMeta && !message.leafUuid && !message.summary) {
         return false;
@@ -138,7 +137,7 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
 
       // Skip empty user messages
       if (message.type === "user" && message.message) {
-        if (message.isMeta) return false;
+        if (message.isMeta) {return false;}
         
         const msg = message.message;
         if (!msg.content || (Array.isArray(msg.content) && msg.content.length === 0)) {
@@ -192,8 +191,7 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
       }
 
       return true;
-    });
-  }, [messages]);
+    }), [messages]);
 
   // Virtualizers for efficient, smooth scrolling of potentially very long outputs
   const rowVirtualizer = useVirtualizer({
@@ -210,15 +208,15 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
     overscan: 5,
   });
 
-  useEffect(() => {
+  useEffect(() => 
     // Clean up listeners on unmount
-    return () => {
-      unlistenRefs.current.forEach(unlisten => unlisten());
+     () => {
+      unlistenRefs.current.forEach(unlisten => { unlisten(); });
       if (elapsedTimeIntervalRef.current) {
         clearInterval(elapsedTimeIntervalRef.current);
       }
-    };
-  }, []);
+    }
+  , []);
 
   // Check if user is at the very bottom of the scrollable container
   const isAtBottom = () => {
@@ -232,7 +230,7 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
   };
 
   useEffect(() => {
-    if (displayableMessages.length === 0) return;
+    if (displayableMessages.length === 0) {return;}
 
     // Auto-scroll only if the user has not manually scrolled OR they are still at the bottom
     const shouldAutoScroll = !hasUserScrolled || isAtBottom();
@@ -252,11 +250,9 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
       elapsedTimeIntervalRef.current = setInterval(() => {
         setElapsedTime(Math.floor((Date.now() - executionStartTime) / 1000));
       }, 100);
-    } else {
-      if (elapsedTimeIntervalRef.current) {
+    } else if (elapsedTimeIntervalRef.current) {
         clearInterval(elapsedTimeIntervalRef.current);
       }
-    }
     
     return () => {
       if (elapsedTimeIntervalRef.current) {
@@ -300,7 +296,7 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
       setRunId(null);
       
       // Clear any existing listeners
-      unlistenRefs.current.forEach(unlisten => unlisten());
+      unlistenRefs.current.forEach(unlisten => { unlisten(); });
       unlistenRefs.current = [];
       
       // Execute the agent and get the run ID
@@ -453,7 +449,7 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
     }
     
     // Clean up listeners but don't stop the actual agent process
-    unlistenRefs.current.forEach(unlisten => unlisten());
+    unlistenRefs.current.forEach(unlisten => { unlisten(); });
     unlistenRefs.current = [];
     
     // Navigate back
@@ -478,8 +474,8 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
         markdown += `## System Initialization\n\n`;
         markdown += `- Session ID: \`${msg.session_id || 'N/A'}\`\n`;
         markdown += `- Model: \`${msg.model || 'default'}\`\n`;
-        if (msg.cwd) markdown += `- Working Directory: \`${msg.cwd}\`\n`;
-        if (msg.tools?.length) markdown += `- Tools: ${msg.tools.join(', ')}\n`;
+        if (msg.cwd) {markdown += `- Working Directory: \`${msg.cwd}\`\n`;}
+        if (msg.tools?.length) {markdown += `- Tools: ${msg.tools.join(', ')}\n`;}
         markdown += `\n`;
       } else if (msg.type === "assistant" && msg.message) {
         markdown += `## Assistant\n\n`;
@@ -562,7 +558,7 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
                 <Button
                   variant="outline"
                   size="default"
-                  onClick={() => setIsFullscreenModalOpen(true)}
+                  onClick={() => { setIsFullscreenModalOpen(true); }}
                 >
                   <Maximize2 className="h-4 w-4 mr-2" />
                   Fullscreen
@@ -675,7 +671,7 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
               <div className="flex gap-2">
                 <Input
                   value={task}
-                  onChange={(e) => setTask(e.target.value)}
+                  onChange={(e) => { setTask(e.target.value); }}
                   placeholder="What would you like the agent to do?"
                   disabled={isRunning}
                   className="flex-1 h-9"
@@ -812,7 +808,7 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
               <h2 className="text-lg font-semibold">{agent.name} - Output</h2>
               {isRunning && (
                 <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                   <span className="text-xs text-green-600 font-medium">Running</span>
                 </div>
               )}
@@ -857,7 +853,7 @@ export const AgentExecution: React.FC<AgentExecutionProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsFullscreenModalOpen(false)}
+                onClick={() => { setIsFullscreenModalOpen(false); }}
                 className="flex items-center gap-2"
               >
                 <X className="h-4 w-4" />

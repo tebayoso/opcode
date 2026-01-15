@@ -1,8 +1,8 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useTabState } from '@/hooks/useTabState';
 import { useScreenTracking } from '@/hooks/useAnalytics';
-import { Tab } from '@/contexts/TabContext';
+import type { Tab } from '@/contexts/TabContext';
 import { Loader2, Plus, ArrowLeft } from 'lucide-react';
 import { api, type Project, type Session, type ClaudeMdFile } from '@/lib/api';
 import { ProjectList } from '@/components/ProjectList';
@@ -19,6 +19,7 @@ const UsageDashboard = lazy(() => import('@/components/UsageDashboard').then(m =
 const MCPManager = lazy(() => import('@/components/MCPManager').then(m => ({ default: m.MCPManager })));
 const Settings = lazy(() => import('@/components/Settings').then(m => ({ default: m.Settings })));
 const MarkdownEditor = lazy(() => import('@/components/MarkdownEditor').then(m => ({ default: m.MarkdownEditor })));
+const ClaudeMemoriesPanel = lazy(() => import('@/components/ClaudeMemoriesPanel').then(m => ({ default: m.ClaudeMemoriesPanel })));
 // const ClaudeFileEditor = lazy(() => import('@/components/ClaudeFileEditor').then(m => ({ default: m.ClaudeFileEditor })));
 
 // Import non-lazy components for projects view
@@ -363,7 +364,21 @@ const TabPanel: React.FC<TabPanelProps> = ({ tab, isActive }) => {
             <div className="p-4">Import agent functionality coming soon...</div>
           </div>
         );
-      
+
+      case 'memories':
+        return (
+          <div className="h-full">
+            <ClaudeMemoriesPanel
+              projectPath={tab.memoriesProjectPath || ''}
+              isOpen
+              onClose={() => {
+                // Close this tab when close is clicked
+                window.dispatchEvent(new CustomEvent('close-tab', { detail: { tabId: tab.id } }));
+              }}
+            />
+          </div>
+        );
+
       default:
         return (
           <div className="h-full">
@@ -374,31 +389,25 @@ const TabPanel: React.FC<TabPanelProps> = ({ tab, isActive }) => {
   };
 
   return (
-    <>
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.15 }}
-        className={`h-full w-full ${panelVisibilityClass}`}
+    <div
+      className={`h-full w-full absolute inset-0 ${panelVisibilityClass}`}
+      style={{ visibility: isActive ? 'visible' : 'hidden' }}
+    >
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        }
       >
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-          }
-        >
-          {renderContent()}
-        </Suspense>
-      </motion.div>
-
-    </>
+        {renderContent()}
+      </Suspense>
+    </div>
   );
 };
 
 export const TabContent: React.FC = () => {
-  const { tabs, activeTabId, createChatTab, createProjectsTab, findTabBySessionId, createClaudeFileTab, createAgentExecutionTab, createCreateAgentTab, createImportAgentTab, closeTab, updateTab } = useTabState();
+  const { tabs, activeTabId, createChatTab, createProjectsTab, findTabBySessionId, createClaudeFileTab, createAgentExecutionTab, createCreateAgentTab, createImportAgentTab, createMemoriesTab, closeTab, updateTab } = useTabState();
   
   // Listen for events to open sessions in tabs
   useEffect(() => {
@@ -449,6 +458,11 @@ export const TabContent: React.FC = () => {
       closeTab(tabId);
     };
 
+    const handleOpenMemoriesTab = (event: CustomEvent) => {
+      const { projectPath } = event.detail || {};
+      createMemoriesTab(projectPath);
+    };
+
     const handleClaudeSessionSelected = (event: CustomEvent) => {
       const { session } = event.detail;
       // Check if there's an existing tab for this session
@@ -464,7 +478,7 @@ export const TabContent: React.FC = () => {
         // If we're in a projects tab, update it to show the session
         // Otherwise create a new tab (for compatibility with other parts of the app)
         const currentTab = tabs.find(t => t.id === activeTabId);
-        if (currentTab && currentTab.type === 'projects') {
+        if (currentTab?.type === 'projects') {
           updateTab(currentTab.id, {
             type: 'chat',
             title: session.project_path.split('/').pop() || 'Session',
@@ -488,6 +502,7 @@ export const TabContent: React.FC = () => {
     window.addEventListener('open-agent-execution', handleOpenAgentExecution as EventListener);
     window.addEventListener('open-create-agent-tab', handleOpenCreateAgentTab);
     window.addEventListener('open-import-agent-tab', handleOpenImportAgentTab);
+    window.addEventListener('open-memories-tab', handleOpenMemoriesTab as EventListener);
     window.addEventListener('close-tab', handleCloseTab as EventListener);
     window.addEventListener('claude-session-selected', handleClaudeSessionSelected as EventListener);
     return () => {
@@ -496,22 +511,22 @@ export const TabContent: React.FC = () => {
       window.removeEventListener('open-agent-execution', handleOpenAgentExecution as EventListener);
       window.removeEventListener('open-create-agent-tab', handleOpenCreateAgentTab);
       window.removeEventListener('open-import-agent-tab', handleOpenImportAgentTab);
+      window.removeEventListener('open-memories-tab', handleOpenMemoriesTab as EventListener);
       window.removeEventListener('close-tab', handleCloseTab as EventListener);
       window.removeEventListener('claude-session-selected', handleClaudeSessionSelected as EventListener);
     };
-  }, [createChatTab, findTabBySessionId, createClaudeFileTab, createAgentExecutionTab, createCreateAgentTab, createImportAgentTab, closeTab, updateTab]);
+  }, [createChatTab, findTabBySessionId, createClaudeFileTab, createAgentExecutionTab, createCreateAgentTab, createImportAgentTab, createMemoriesTab, closeTab, updateTab]);
   
   return (
     <div className="flex-1 h-full relative">
-      <AnimatePresence mode="wait">
-        {tabs.map((tab) => (
-          <TabPanel
-            key={tab.id}
-            tab={tab}
-            isActive={tab.id === activeTabId}
-          />
-        ))}
-      </AnimatePresence>
+      {/* Render all tabs but only show active one - prevents unmounting and losing input state */}
+      {tabs.map((tab) => (
+        <TabPanel
+          key={tab.id}
+          tab={tab}
+          isActive={tab.id === activeTabId}
+        />
+      ))}
       
       {tabs.length === 0 && (
         <div className="flex items-center justify-center h-full text-muted-foreground">

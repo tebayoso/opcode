@@ -29,7 +29,7 @@ export const TokenCounter: React.FC<TokenCounterProps> = ({
   show = true,
   className,
 }) => {
-  if (!show || tokens === 0) return null;
+  if (!show || tokens === 0) {return null;}
 
   return (
     <motion.div

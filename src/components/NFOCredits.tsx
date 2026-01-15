@@ -65,7 +65,7 @@ export const NFOCredits: React.FC<NFOCreditsProps> = ({ onClose }) => {
       setScrollPosition(prev => prev + 1);
     }, 30); // Smooth scrolling speed
     
-    return () => clearInterval(scrollInterval);
+    return () => { clearInterval(scrollInterval); };
   }, []);
   
   // Apply scroll position

@@ -112,7 +112,7 @@ export class ConsentManager {
   }
   
   private async saveSettings(): Promise<void> {
-    if (!this.settings) return;
+    if (!this.settings) {return;}
     
     try {
       localStorage.setItem(ANALYTICS_STORAGE_KEY, JSON.stringify(this.settings));

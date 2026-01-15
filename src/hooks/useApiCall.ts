@@ -57,7 +57,7 @@ export function useApiCall<T>(
         const result = await apiFunction(...args);
 
         // Only update state if component is still mounted
-        if (!isMountedRef.current) return null;
+        if (!isMountedRef.current) {return null;}
 
         setData(result);
         
@@ -75,7 +75,7 @@ export function useApiCall<T>(
         }
 
         // Only update state if component is still mounted
-        if (!isMountedRef.current) return null;
+        if (!isMountedRef.current) {return null;}
 
         const error = err instanceof Error ? err : new Error('An error occurred');
         setError(error);
@@ -103,14 +103,12 @@ export function useApiCall<T>(
   }, []);
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       isMountedRef.current = false;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-    };
-  }, []);
+    }, []);
 
   return { data, isLoading, error, call, reset };
 }

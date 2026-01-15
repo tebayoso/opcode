@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { X, Plus, MessageSquare, Bot, AlertCircle, Loader2, Folder, BarChart, Server, Settings, FileText } from 'lucide-react';
 import { useTabState } from '@/hooks/useTabState';
-import { Tab, useTabContext } from '@/contexts/TabContext';
+import { type Tab, useTabContext } from '@/contexts/TabContext';
 import { cn } from '@/lib/utils';
 import { useTrackEvent } from '@/hooks';
 
@@ -63,7 +63,7 @@ const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClose, onClick, isDr
     <Reorder.Item
       value={tab}
       id={tab.id}
-      dragListener={true}
+      dragListener
       transition={{ duration: 0.1 }} // Snappy reorder animation
       className={cn(
         "relative flex items-center gap-2 text-sm cursor-pointer select-none group",
@@ -75,9 +75,9 @@ const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClose, onClick, isDr
         isDragging && "bg-card border-primary/50 shadow-sm z-50",
         "min-w-[120px] max-w-[220px] h-8 px-3"
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={() => onClick(tab.id)}
+      onMouseEnter={() => { setIsHovered(true); }}
+      onMouseLeave={() => { setIsHovered(false); }}
+      onClick={() => { onClick(tab.id); }}
       onDragStart={() => setDraggedTabId?.(tab.id)}
       onDragEnd={() => setDraggedTabId?.(null)}
     >
@@ -226,7 +226,7 @@ export const TabManager: React.FC<TabManagerProps> = ({ className }) => {
   // Check scroll buttons visibility
   const checkScrollButtons = () => {
     const container = scrollContainerRef.current;
-    if (!container) return;
+    if (!container) {return;}
 
     const { scrollLeft, scrollWidth, clientWidth } = container;
     setShowLeftScroll(scrollLeft > 0);
@@ -236,7 +236,7 @@ export const TabManager: React.FC<TabManagerProps> = ({ className }) => {
   useEffect(() => {
     checkScrollButtons();
     const container = scrollContainerRef.current;
-    if (!container) return;
+    if (!container) {return;}
 
     container.addEventListener('scroll', checkScrollButtons);
     window.addEventListener('resize', checkScrollButtons);
@@ -254,7 +254,7 @@ export const TabManager: React.FC<TabManagerProps> = ({ className }) => {
     
     // Find what moved
     const movedTabId = newOrderIds.find((id, index) => oldOrder[index] !== id);
-    if (!movedTabId) return;
+    if (!movedTabId) {return;}
     
     const oldIndex = oldOrder.indexOf(movedTabId);
     const newIndex = newOrderIds.indexOf(movedTabId);
@@ -287,7 +287,7 @@ export const TabManager: React.FC<TabManagerProps> = ({ className }) => {
 
   const scrollTabs = (direction: 'left' | 'right') => {
     const container = scrollContainerRef.current;
-    if (!container) return;
+    if (!container) {return;}
 
     const scrollAmount = 200;
     const newScrollLeft = direction === 'left'
@@ -314,7 +314,7 @@ export const TabManager: React.FC<TabManagerProps> = ({ className }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => scrollTabs('left')}
+            onClick={() => { scrollTabs('left'); }}
             className={cn(
               "p-1.5 hover:bg-muted/80 rounded-sm z-20 ml-1",
               "transition-colors duration-200 flex items-center justify-center",
@@ -388,7 +388,7 @@ export const TabManager: React.FC<TabManagerProps> = ({ className }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => scrollTabs('right')}
+            onClick={() => { scrollTabs('right'); }}
             className={cn(
               "p-1.5 hover:bg-muted/80 rounded-sm z-20 mr-1",
               "transition-colors duration-200 flex items-center justify-center",

@@ -63,8 +63,8 @@ export const ClaudeMemoriesDropdown: React.FC<ClaudeMemoriesDropdownProps> = ({
   };
   
   const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024) {return `${bytes} B`;}
+    if (bytes < 1024 * 1024) {return `${(bytes / 1024).toFixed(1)} KB`;}
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
   
@@ -73,7 +73,7 @@ export const ClaudeMemoriesDropdown: React.FC<ClaudeMemoriesDropdownProps> = ({
       <Card className="overflow-hidden">
         {/* Dropdown Header */}
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => { setIsOpen(!isOpen); }}
           className="w-full flex items-center justify-between p-3 hover:bg-accent/50 transition-colors"
         >
           <div className="flex items-center space-x-2">

@@ -55,9 +55,7 @@ export function OutputCacheProvider({ children }: OutputCacheProviderProps) {
   const [isPolling, setIsPolling] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
-  const getCachedOutput = useCallback((sessionId: number): CachedSessionOutput | null => {
-    return cache.get(sessionId) || null;
-  }, [cache]);
+  const getCachedOutput = useCallback((sessionId: number): CachedSessionOutput | null => cache.get(sessionId) || null, [cache]);
 
   const setCachedOutput = useCallback((sessionId: number, data: CachedSessionOutput) => {
     setCache(prev => new Map(prev.set(sessionId, data)));
@@ -88,7 +86,7 @@ export function OutputCacheProvider({ children }: OutputCacheProviderProps) {
   }, []);
 
   const parseOutput = useCallback((rawOutput: string): ClaudeStreamMessage[] => {
-    if (!rawOutput) return [];
+    if (!rawOutput) {return [];}
 
     const lines = rawOutput.split('\n').filter(line => line.trim());
     const parsedMessages: ClaudeStreamMessage[] = [];
@@ -156,7 +154,7 @@ export function OutputCacheProvider({ children }: OutputCacheProviderProps) {
   }, [updateSessionCache]);
 
   const startBackgroundPolling = useCallback(() => {
-    if (pollingInterval) return;
+    if (pollingInterval) {return;}
 
     setIsPolling(true);
     const interval = setInterval(pollRunningSessions, 3000); // Poll every 3 seconds
@@ -174,7 +172,7 @@ export function OutputCacheProvider({ children }: OutputCacheProviderProps) {
   // Auto-start polling when provider mounts
   useEffect(() => {
     startBackgroundPolling();
-    return () => stopBackgroundPolling();
+    return () => { stopBackgroundPolling(); };
   }, [startBackgroundPolling, stopBackgroundPolling]);
 
   const value: OutputCacheContextType = {

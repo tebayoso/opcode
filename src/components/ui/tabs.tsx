@@ -44,13 +44,11 @@ const Tabs: React.FC<TabsProps> = ({
   onValueChange,
   children,
   className,
-}) => {
-  return (
+}) => (
     <TabsContext.Provider value={{ value, onValueChange }}>
       <div className={cn("w-full", className)}>{children}</div>
     </TabsContext.Provider>
   );
-};
 
 export interface TabsListProps {
   children: React.ReactNode;
@@ -103,7 +101,7 @@ const TabsTrigger = React.forwardRef<
       role="tab"
       aria-selected={isSelected}
       disabled={disabled}
-      onClick={() => onValueChange(value)}
+      onClick={() => { onValueChange(value); }}
       className={cn(
         "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all",
         "disabled:pointer-events-none disabled:opacity-50",
@@ -137,7 +135,7 @@ const TabsContent = React.forwardRef<
   const { value: selectedValue } = React.useContext(TabsContext);
   const isSelected = selectedValue === value;
 
-  if (!isSelected) return null;
+  if (!isSelected) {return null;}
 
   return (
     <div

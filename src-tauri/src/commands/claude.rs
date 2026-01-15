@@ -113,6 +113,23 @@ pub struct ClaudeMdFile {
     pub modified: u64,
 }
 
+/// Represents a global config file from ~/.claude/
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GlobalConfigFile {
+    /// File name
+    pub name: String,
+    /// Relative path from ~/.claude/
+    pub relative_path: String,
+    /// Absolute path to the file
+    pub absolute_path: String,
+    /// Category of the config file
+    pub category: String,
+    /// File size in bytes
+    pub size: u64,
+    /// Last modified timestamp
+    pub modified: u64,
+}
+
 /// Represents a file or directory entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileEntry {
@@ -844,6 +861,117 @@ fn find_claude_md_recursive(
     }
 
     Ok(())
+}
+
+/// Finds all global config files in ~/.claude/ directory
+#[tauri::command]
+pub async fn find_global_config_files() -> Result<Vec<GlobalConfigFile>, String> {
+    log::info!("Finding global config files in ~/.claude/");
+
+    let home_dir = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let claude_dir = home_dir.join(".claude");
+
+    if !claude_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut config_files = Vec::new();
+
+    // Helper to add a file with category
+    let add_file = |path: &PathBuf, category: &str, config_files: &mut Vec<GlobalConfigFile>| -> Result<(), String> {
+        if path.exists() && path.is_file() {
+            let metadata = fs::metadata(path)
+                .map_err(|e| format!("Failed to read file metadata: {}", e))?;
+
+            let relative_path = path
+                .strip_prefix(&claude_dir)
+                .map_err(|e| format!("Failed to get relative path: {}", e))?
+                .to_string_lossy()
+                .to_string();
+
+            let modified = metadata
+                .modified()
+                .unwrap_or(SystemTime::UNIX_EPOCH)
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+
+            config_files.push(GlobalConfigFile {
+                name: path.file_name().unwrap_or_default().to_string_lossy().to_string(),
+                relative_path,
+                absolute_path: path.to_string_lossy().to_string(),
+                category: category.to_string(),
+                size: metadata.len(),
+                modified,
+            });
+        }
+        Ok(())
+    };
+
+    // Core config files
+    add_file(&claude_dir.join("CLAUDE.md"), "Core Instructions", &mut config_files)?;
+    add_file(&claude_dir.join("settings.json"), "Settings", &mut config_files)?;
+    add_file(&claude_dir.join("PRINCIPLES.md"), "Core Instructions", &mut config_files)?;
+    add_file(&claude_dir.join("RULES.md"), "Core Instructions", &mut config_files)?;
+    add_file(&claude_dir.join("FLAGS.md"), "Core Instructions", &mut config_files)?;
+
+    // Mode files
+    let mode_files = ["MODE_Brainstorming.md", "MODE_Business_Panel.md", "MODE_DeepResearch.md",
+        "MODE_Introspection.md", "MODE_Orchestration.md", "MODE_Task_Management.md", "MODE_Token_Efficiency.md"];
+    for mode_file in mode_files {
+        add_file(&claude_dir.join(mode_file), "Modes", &mut config_files)?;
+    }
+
+    // MCP config files
+    let mcp_files = ["MCP_Context7.md", "MCP_Magic.md", "MCP_Morphllm.md",
+        "MCP_Playwright.md", "MCP_Sequential.md", "MCP_Serena.md", "MCP_Tavily.md"];
+    for mcp_file in mcp_files {
+        add_file(&claude_dir.join(mcp_file), "MCP Servers", &mut config_files)?;
+    }
+
+    // Business/Research config files
+    add_file(&claude_dir.join("BUSINESS_PANEL_EXAMPLES.md"), "Business", &mut config_files)?;
+    add_file(&claude_dir.join("BUSINESS_SYMBOLS.md"), "Business", &mut config_files)?;
+    add_file(&claude_dir.join("RESEARCH_CONFIG.md"), "Research", &mut config_files)?;
+
+    // Scan agents directory
+    let agents_dir = claude_dir.join("agents");
+    if agents_dir.exists() && agents_dir.is_dir() {
+        if let Ok(entries) = fs::read_dir(&agents_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && path.extension().map_or(false, |ext| ext == "md") {
+                    add_file(&path, "Agents", &mut config_files)?;
+                }
+            }
+        }
+    }
+
+    // Scan commands/sc directory
+    let commands_dir = claude_dir.join("commands").join("sc");
+    if commands_dir.exists() && commands_dir.is_dir() {
+        if let Ok(entries) = fs::read_dir(&commands_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && path.extension().map_or(false, |ext| ext == "md") {
+                    add_file(&path, "Commands", &mut config_files)?;
+                }
+            }
+        }
+    }
+
+    // Sort by category then by name
+    config_files.sort_by(|a, b| {
+        let cat_cmp = a.category.cmp(&b.category);
+        if cat_cmp == std::cmp::Ordering::Equal {
+            a.name.cmp(&b.name)
+        } else {
+            cat_cmp
+        }
+    });
+
+    log::info!("Found {} global config files", config_files.len());
+    Ok(config_files)
 }
 
 /// Reads a specific CLAUDE.md file by its absolute path

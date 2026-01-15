@@ -73,7 +73,7 @@ export const MCPImportExport: React.FC<MCPImportExportProps> = ({
    */
   const handleJsonFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
 
     try {
       setImportingJson(true);
@@ -118,7 +118,7 @@ export const MCPImportExport: React.FC<MCPImportExportProps> = ({
       } else if (jsonData.type && jsonData.command) {
         // Single server format
         const name = prompt("Enter a name for this server:");
-        if (!name) return;
+        if (!name) {return;}
 
         const result = await api.mcpAddJson(name, content, importScope);
         if (result.success) {
@@ -179,7 +179,7 @@ export const MCPImportExport: React.FC<MCPImportExportProps> = ({
             </div>
             <SelectComponent
               value={importScope}
-              onValueChange={(value: string) => setImportScope(value)}
+              onValueChange={(value: string) => { setImportScope(value); }}
               options={[
                 { value: "local", label: "Local (this project only)" },
                 { value: "project", label: "Project (shared via .mcp.json)" },
@@ -287,7 +287,7 @@ export const MCPImportExport: React.FC<MCPImportExportProps> = ({
             </div>
             <Button
               onClick={handleExport}
-              disabled={true}
+              disabled
               variant="secondary"
               className="w-full gap-2"
             >

@@ -61,7 +61,7 @@ export const Popover: React.FC<PopoverProps> = ({
   
   // Close on click outside
   React.useEffect(() => {
-    if (!open) return;
+    if (!open) {return;}
     
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -75,12 +75,12 @@ export const Popover: React.FC<PopoverProps> = ({
     };
     
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => { document.removeEventListener("mousedown", handleClickOutside); };
   }, [open, setOpen]);
   
   // Close on escape
   React.useEffect(() => {
-    if (!open) return;
+    if (!open) {return;}
     
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -89,7 +89,7 @@ export const Popover: React.FC<PopoverProps> = ({
     };
     
     document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
+    return () => { document.removeEventListener("keydown", handleEscape); };
   }, [open, setOpen]);
   
   const alignClass = {
@@ -105,7 +105,7 @@ export const Popover: React.FC<PopoverProps> = ({
     <div className="relative inline-block">
       <div
         ref={triggerRef}
-        onClick={() => setOpen(!open)}
+        onClick={() => { setOpen(!open); }}
       >
         {trigger}
       </div>

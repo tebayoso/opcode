@@ -25,7 +25,7 @@ function AppContent() {
   // Keyboard shortcuts for tab navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const isMac = navigator.platform.toUpperCase().includes('MAC');
       const modKey = isMac ? e.metaKey : e.ctrlKey;
       
       if (modKey) {
@@ -59,7 +59,7 @@ function AppContent() {
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => { window.removeEventListener('keydown', handleKeyDown); };
   }, []);
 
   // Check if Claude executable exists on mount
@@ -85,8 +85,8 @@ function AppContent() {
       window.dispatchEvent(new CustomEvent('create-project-tab'));
     };
 
-    const handleShowNFO = () => setShowNFO(true);
-    const handleShowAgents = () => setShowAgentsModal(true);
+    const handleShowNFO = () => { setShowNFO(true); };
+    const handleShowAgents = () => { setShowAgentsModal(true); };
 
     const projectButton = document.getElementById('create-project-tab-btn');
     if (projectButton) {
@@ -130,7 +130,7 @@ function AppContent() {
         </div>
 
         {/* Global Modals */}
-        {showNFO && <NFOCredits onClose={() => setShowNFO(false)} />}
+        {showNFO && <NFOCredits onClose={() => { setShowNFO(false); }} />}
         
         <ClaudeBinaryDialog 
           open={showClaudeBinaryDialog} 
@@ -155,7 +155,7 @@ function AppContent() {
             <Toast
               message={toast.message}
               type={toast.type}
-              onDismiss={() => setToast(null)}
+              onDismiss={() => { setToast(null); }}
             />
           </ToastContainer>
         )}

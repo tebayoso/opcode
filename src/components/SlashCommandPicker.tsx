@@ -46,17 +46,17 @@ interface SlashCommandPickerProps {
 // Get icon for command based on its properties
 const getCommandIcon = (command: SlashCommand) => {
   // If it has bash commands, show terminal icon
-  if (command.has_bash_commands) return Terminal;
+  if (command.has_bash_commands) {return Terminal;}
   
   // If it has file references, show file icon
-  if (command.has_file_references) return FileCode;
+  if (command.has_file_references) {return FileCode;}
   
   // If it accepts arguments, show zap icon
-  if (command.accepts_arguments) return Zap;
+  if (command.accepts_arguments) {return Zap;}
   
   // Based on scope
-  if (command.scope === "project") return FolderOpen;
-  if (command.scope === "user") return Globe;
+  if (command.scope === "project") {return FolderOpen;}
+  if (command.scope === "user") {return Globe;}
   
   // Default
   return Command;
@@ -124,16 +124,16 @@ export const SlashCommandPicker: React.FC<SlashCommandPickerProps> = ({
     } else {
       filtered = filteredByTab.filter(cmd => {
         // Match against command name
-        if (cmd.name.toLowerCase().includes(query)) return true;
+        if (cmd.name.toLowerCase().includes(query)) {return true;}
         
         // Match against full command
-        if (cmd.full_command.toLowerCase().includes(query)) return true;
+        if (cmd.full_command.toLowerCase().includes(query)) {return true;}
         
         // Match against namespace
-        if (cmd.namespace && cmd.namespace.toLowerCase().includes(query)) return true;
+        if (cmd.namespace?.toLowerCase().includes(query)) {return true;}
         
         // Match against description
-        if (cmd.description && cmd.description.toLowerCase().includes(query)) return true;
+        if (cmd.description?.toLowerCase().includes(query)) {return true;}
         
         return false;
       });
@@ -143,14 +143,14 @@ export const SlashCommandPicker: React.FC<SlashCommandPickerProps> = ({
         // Exact name match first
         const aExact = a.name.toLowerCase() === query;
         const bExact = b.name.toLowerCase() === query;
-        if (aExact && !bExact) return -1;
-        if (!aExact && bExact) return 1;
+        if (aExact && !bExact) {return -1;}
+        if (!aExact && bExact) {return 1;}
         
         // Then by name starts with
         const aStarts = a.name.toLowerCase().startsWith(query);
         const bStarts = b.name.toLowerCase().startsWith(query);
-        if (aStarts && !bStarts) return -1;
-        if (!aStarts && bStarts) return 1;
+        if (aStarts && !bStarts) {return -1;}
+        if (!aStarts && bStarts) {return 1;}
         
         // Then alphabetically
         return a.name.localeCompare(b.name);
@@ -198,7 +198,7 @@ export const SlashCommandPicker: React.FC<SlashCommandPickerProps> = ({
     };
     
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => { window.removeEventListener('keydown', handleKeyDown); };
   }, [filteredCommands, selectedIndex, onSelect, onClose]);
   
   // Scroll selected item into view
@@ -238,7 +238,7 @@ export const SlashCommandPicker: React.FC<SlashCommandPickerProps> = ({
   };
   
   // Group commands by scope and namespace for the Custom tab
-  const groupedCommands = filteredCommands.reduce((acc, cmd) => {
+  const groupedCommands = filteredCommands.reduce<Record<string, SlashCommand[]>>((acc, cmd) => {
     let key: string;
     if (cmd.scope === "user") {
       key = cmd.namespace ? `User Commands: ${cmd.namespace}` : "User Commands";
@@ -253,7 +253,7 @@ export const SlashCommandPicker: React.FC<SlashCommandPickerProps> = ({
     }
     acc[key].push(cmd);
     return acc;
-  }, {} as Record<string, SlashCommand[]>);
+  }, {});
   
   // Update search query from parent
   useEffect(() => {
@@ -351,8 +351,8 @@ export const SlashCommandPicker: React.FC<SlashCommandPickerProps> = ({
                           <button
                             key={command.id}
                             data-index={index}
-                            onClick={() => handleCommandClick(command)}
-                            onMouseEnter={() => setSelectedIndex(index)}
+                            onClick={() => { handleCommandClick(command); }}
+                            onMouseEnter={() => { setSelectedIndex(index); }}
                             className={cn(
                               "w-full flex items-start gap-3 px-3 py-2 rounded-md",
                               "hover:bg-accent transition-colors",
@@ -415,8 +415,8 @@ export const SlashCommandPicker: React.FC<SlashCommandPickerProps> = ({
                             <button
                               key={command.id}
                               data-index={index}
-                              onClick={() => handleCommandClick(command)}
-                              onMouseEnter={() => setSelectedIndex(index)}
+                              onClick={() => { handleCommandClick(command); }}
+                              onMouseEnter={() => { setSelectedIndex(index); }}
                               className={cn(
                                 "w-full flex items-start gap-3 px-3 py-2 rounded-md",
                                 "hover:bg-accent transition-colors",
@@ -489,8 +489,8 @@ export const SlashCommandPicker: React.FC<SlashCommandPickerProps> = ({
                                   <button
                                     key={command.id}
                                     data-index={globalIndex}
-                                    onClick={() => handleCommandClick(command)}
-                                    onMouseEnter={() => setSelectedIndex(globalIndex)}
+                                    onClick={() => { handleCommandClick(command); }}
+                                    onMouseEnter={() => { setSelectedIndex(globalIndex); }}
                                     className={cn(
                                       "w-full flex items-start gap-3 px-3 py-2 rounded-md",
                                       "hover:bg-accent transition-colors",

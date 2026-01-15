@@ -15,10 +15,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { 
-  api, 
+import {
+  api,
   type ClaudeSettings,
-  type ClaudeInstallation
+  type ClaudeInstallation,
+  type MCPServer
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Toast, ToastContainer } from "@/components/ui/toast";
@@ -26,7 +27,12 @@ import { ClaudeVersionSelector } from "./ClaudeVersionSelector";
 import { StorageTab } from "./StorageTab";
 import { HooksEditor } from "./HooksEditor";
 import { SlashCommandsManager } from "./SlashCommandsManager";
+import { SkillsManager } from "./SkillsManager";
 import { ProxySettings } from "./ProxySettings";
+import { ClaudeMemoriesPanel } from "./ClaudeMemoriesPanel";
+import { PluginManager } from "./PluginManager";
+import { MCPServerList } from "./MCPServerList";
+import { MCPAddServer } from "./MCPAddServer";
 import { useTheme, useTrackEvent } from "@/hooks";
 import { analytics } from "@/lib/analytics";
 import { TabPersistenceService } from "@/services/tabPersistence";
@@ -52,6 +58,83 @@ interface EnvironmentVariable {
   key: string;
   value: string;
 }
+
+/**
+ * MCP Tab Content - embedded MCP manager for Settings
+ */
+const MCPTabContent: React.FC = () => {
+  const [servers, setServers] = useState<MCPServer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeSubTab, setActiveSubTab] = useState("servers");
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const loadServers = async () => {
+    try {
+      setLoading(true);
+      const serverList = await api.mcpList();
+      setServers(serverList);
+    } catch (err) {
+      console.error("Failed to load MCP servers:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadServers();
+  }, []);
+
+  const handleServerAdded = () => {
+    loadServers();
+    setToast({ message: "MCP server added successfully!", type: "success" });
+    setActiveSubTab("servers");
+  };
+
+  const handleServerRemoved = (name: string) => {
+    setServers(prev => prev.filter(s => s.name !== name));
+    setToast({ message: `Server "${name}" removed successfully!`, type: "success" });
+  };
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+        <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-6">
+          <div className="flex items-center justify-between">
+            <TabsList>
+              <TabsTrigger value="servers">Servers</TabsTrigger>
+              <TabsTrigger value="add">Add Server</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="servers" className="mt-0">
+            <MCPServerList
+              servers={servers}
+              loading={loading}
+              onServerRemoved={handleServerRemoved}
+              onRefresh={loadServers}
+            />
+          </TabsContent>
+
+          <TabsContent value="add" className="mt-0">
+            <MCPAddServer
+              onServerAdded={handleServerAdded}
+              onError={(message: string) => setToast({ message, type: "error" })}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+      {toast && (
+        <div className="p-4">
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onDismiss={() => setToast(null)}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
 
 /**
  * Comprehensive Settings UI for managing Claude Code settings
@@ -206,12 +289,12 @@ export const Settings: React.FC<SettingsProps> = ({
           allow: allowRules.map(rule => rule.value).filter(v => v && String(v).trim()),
           deny: denyRules.map(rule => rule.value).filter(v => v && String(v).trim()),
         },
-        env: envVars.reduce((acc, { key, value }) => {
+        env: envVars.reduce<Record<string, string>>((acc, { key, value }) => {
           if (key && String(key).trim() && value && String(value).trim()) {
             acc[key] = String(value);
           }
           return acc;
-        }, {} as Record<string, string>),
+        }, {}),
       };
 
       await api.saveClaudeSettings(updatedSettings);
@@ -393,15 +476,19 @@ export const Settings: React.FC<SettingsProps> = ({
       ) : (
         <div className="flex-1 overflow-y-auto p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-8 w-full mb-6 h-auto p-1">
-              <TabsTrigger value="general" className="py-2.5 px-3">General</TabsTrigger>
-              <TabsTrigger value="permissions" className="py-2.5 px-3">Permissions</TabsTrigger>
-              <TabsTrigger value="environment" className="py-2.5 px-3">Environment</TabsTrigger>
-              <TabsTrigger value="advanced" className="py-2.5 px-3">Advanced</TabsTrigger>
-              <TabsTrigger value="hooks" className="py-2.5 px-3">Hooks</TabsTrigger>
-              <TabsTrigger value="commands" className="py-2.5 px-3">Commands</TabsTrigger>
-              <TabsTrigger value="storage" className="py-2.5 px-3">Storage</TabsTrigger>
-              <TabsTrigger value="proxy" className="py-2.5 px-3">Proxy</TabsTrigger>
+            <TabsList className="grid grid-cols-12 w-full mb-6 h-auto p-1">
+              <TabsTrigger value="general" className="py-2.5 px-2">General</TabsTrigger>
+              <TabsTrigger value="permissions" className="py-2.5 px-2">Permissions</TabsTrigger>
+              <TabsTrigger value="environment" className="py-2.5 px-2">Environment</TabsTrigger>
+              <TabsTrigger value="advanced" className="py-2.5 px-2">Advanced</TabsTrigger>
+              <TabsTrigger value="hooks" className="py-2.5 px-2">Hooks</TabsTrigger>
+              <TabsTrigger value="commands" className="py-2.5 px-2">Commands</TabsTrigger>
+              <TabsTrigger value="skills" className="py-2.5 px-2">Skills</TabsTrigger>
+              <TabsTrigger value="plugins" className="py-2.5 px-2">Plugins</TabsTrigger>
+              <TabsTrigger value="mcp" className="py-2.5 px-2">MCP</TabsTrigger>
+              <TabsTrigger value="memories" className="py-2.5 px-2">Memories</TabsTrigger>
+              <TabsTrigger value="storage" className="py-2.5 px-2">Storage</TabsTrigger>
+              <TabsTrigger value="proxy" className="py-2.5 px-2">Proxy</TabsTrigger>
             </TabsList>
             
             {/* General Settings */}
@@ -609,7 +696,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       <Switch
                         id="coauthored"
                         checked={settings?.includeCoAuthoredBy !== false}
-                        onCheckedChange={(checked) => updateSetting("includeCoAuthoredBy", checked)}
+                        onCheckedChange={(checked) => { updateSetting("includeCoAuthoredBy", checked); }}
                       />
                     </div>
                     
@@ -624,7 +711,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       <Switch
                         id="verbose"
                         checked={settings?.verbose === true}
-                        onCheckedChange={(checked) => updateSetting("verbose", checked)}
+                        onCheckedChange={(checked) => { updateSetting("verbose", checked); }}
                       />
                     </div>
                     
@@ -657,7 +744,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       <ClaudeVersionSelector
                         selectedPath={currentBinaryPath}
                         onSelect={handleClaudeInstallationSelect}
-                        simplified={true}
+                        simplified
                       />
                       {binaryPathChanged && (
                         <p className="text-caption text-amber-600 dark:text-amber-400 flex items-center gap-1">
@@ -790,7 +877,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => addPermissionRule("allow")}
+                        onClick={() => { addPermissionRule("allow"); }}
                         className="gap-2 hover:border-green-500/50 hover:text-green-500"
                       >
                         <Plus className="h-3 w-3" />
@@ -814,13 +901,13 @@ export const Settings: React.FC<SettingsProps> = ({
                             <Input
                               placeholder="e.g., Bash(npm run test:*)"
                               value={rule.value}
-                              onChange={(e) => updatePermissionRule("allow", rule.id, e.target.value)}
+                              onChange={(e) => { updatePermissionRule("allow", rule.id, e.target.value); }}
                               className="flex-1"
                             />
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => removePermissionRule("allow", rule.id)}
+                              onClick={() => { removePermissionRule("allow", rule.id); }}
                               className="h-8 w-8"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -838,7 +925,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => addPermissionRule("deny")}
+                        onClick={() => { addPermissionRule("deny"); }}
                         className="gap-2 hover:border-red-500/50 hover:text-red-500"
                       >
                         <Plus className="h-3 w-3" />
@@ -862,13 +949,13 @@ export const Settings: React.FC<SettingsProps> = ({
                             <Input
                               placeholder="e.g., Bash(curl:*)"
                               value={rule.value}
-                              onChange={(e) => updatePermissionRule("deny", rule.id, e.target.value)}
+                              onChange={(e) => { updatePermissionRule("deny", rule.id, e.target.value); }}
                               className="flex-1"
                             />
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => removePermissionRule("deny", rule.id)}
+                              onClick={() => { removePermissionRule("deny", rule.id); }}
                               className="h-8 w-8"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -933,20 +1020,20 @@ export const Settings: React.FC<SettingsProps> = ({
                           <Input
                             placeholder="KEY"
                             value={envVar.key}
-                            onChange={(e) => updateEnvVar(envVar.id, "key", e.target.value)}
+                            onChange={(e) => { updateEnvVar(envVar.id, "key", e.target.value); }}
                             className="flex-1 font-mono text-sm"
                           />
                           <span className="text-muted-foreground">=</span>
                           <Input
                             placeholder="value"
                             value={envVar.value}
-                            onChange={(e) => updateEnvVar(envVar.id, "value", e.target.value)}
+                            onChange={(e) => { updateEnvVar(envVar.id, "value", e.target.value); }}
                             className="flex-1 font-mono text-sm"
                           />
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => removeEnvVar(envVar.id)}
+                            onClick={() => { removeEnvVar(envVar.id); }}
                             className="h-8 w-8 hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -987,7 +1074,7 @@ export const Settings: React.FC<SettingsProps> = ({
                       id="apiKeyHelper"
                       placeholder="/path/to/generate_api_key.sh"
                       value={settings?.apiKeyHelper || ""}
-                      onChange={(e) => updateSetting("apiKeyHelper", e.target.value || undefined)}
+                      onChange={(e) => { updateSetting("apiKeyHelper", e.target.value || undefined); }}
                     />
                     <p className="text-xs text-muted-foreground">
                       Custom script to generate auth values for API requests
@@ -1024,7 +1111,7 @@ export const Settings: React.FC<SettingsProps> = ({
                     key={activeTab}
                     scope="user"
                     className="border-0"
-                    hideActions={true}
+                    hideActions
                     onChange={(hasChanges, getHooks) => {
                       setUserHooksChanged(hasChanges);
                       getUserHooks.current = getHooks;
@@ -1040,7 +1127,39 @@ export const Settings: React.FC<SettingsProps> = ({
                 <SlashCommandsManager className="p-0" />
               </Card>
             </TabsContent>
-            
+
+            {/* Skills Tab */}
+            <TabsContent value="skills">
+              <Card className="p-6">
+                <SkillsManager className="p-0" />
+              </Card>
+            </TabsContent>
+
+            {/* Plugins Tab */}
+            <TabsContent value="plugins" className="h-[calc(100vh-280px)]">
+              <Card className="p-0 h-full overflow-hidden">
+                <PluginManager />
+              </Card>
+            </TabsContent>
+
+            {/* MCP Tab */}
+            <TabsContent value="mcp" className="h-[calc(100vh-280px)]">
+              <Card className="p-0 h-full overflow-hidden">
+                <MCPTabContent />
+              </Card>
+            </TabsContent>
+
+            {/* Memories Tab */}
+            <TabsContent value="memories" className="h-[calc(100vh-280px)]">
+              <Card className="p-0 h-full overflow-hidden">
+                <ClaudeMemoriesPanel
+                  projectPath=""
+                  isOpen={activeTab === "memories"}
+                  onClose={() => {}}
+                />
+              </Card>
+            </TabsContent>
+
             {/* Storage Tab */}
             <TabsContent value="storage">
               <StorageTab />
@@ -1070,7 +1189,7 @@ export const Settings: React.FC<SettingsProps> = ({
           <Toast
             message={toast.message}
             type={toast.type}
-            onDismiss={() => setToast(null)}
+            onDismiss={() => { setToast(null); }}
           />
         )}
       </ToastContainer>

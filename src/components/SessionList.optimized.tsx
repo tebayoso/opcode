@@ -27,13 +27,13 @@ const SessionCard = React.memo<{
   onEditClaudeFile?: (file: ClaudeMdFile) => void;
 }>(({ session, projectPath, onClick, onEditClaudeFile }) => {
   const formatTime = useCallback((timestamp: string | number | undefined) => {
-    if (!timestamp) return "Unknown time";
+    if (!timestamp) {return "Unknown time";}
     
     if (typeof timestamp === "string") {
       return formatISOTimestamp(timestamp);
-    } else {
+    } 
       return formatUnixTimestamp(timestamp);
-    }
+    
   }, []);
 
   return (
@@ -110,13 +110,11 @@ export const SessionList: React.FC<SessionListProps> = React.memo(({
   className
 }) => {
   // Sort sessions by created_at in descending order
-  const sortedSessions = useMemo(() => {
-    return [...sessions].sort((a, b) => {
+  const sortedSessions = useMemo(() => [...sessions].sort((a, b) => {
       const timeA = a.created_at || 0;
       const timeB = b.created_at || 0;
       return timeB > timeA ? 1 : -1;
-    });
-  }, [sessions]);
+    }), [sessions]);
 
   // Use custom pagination hook
   const {
@@ -185,7 +183,7 @@ export const SessionList: React.FC<SessionListProps> = React.memo(({
                   key={session.id}
                   session={session}
                   projectPath={projectPath}
-                  onClick={() => handleSessionClick(session)}
+                  onClick={() => { handleSessionClick(session); }}
                   onEditClaudeFile={onEditClaudeFile}
                 />
               ))}

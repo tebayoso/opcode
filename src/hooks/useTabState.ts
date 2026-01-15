@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useTabContext } from '@/contexts/TabContext';
-import { Tab } from '@/contexts/TabContext';
+import type { Tab } from '@/contexts/TabContext';
 
 interface UseTabStateReturn {
   // State
@@ -10,7 +10,7 @@ interface UseTabStateReturn {
   tabCount: number;
   chatTabCount: number;
   agentTabCount: number;
-  
+
   // Operations
   createChatTab: (projectId?: string, title?: string, projectPath?: string) => string;
   createAgentTab: (agentRunId: string, agentName: string) => string;
@@ -24,6 +24,7 @@ interface UseTabStateReturn {
   createClaudeFileTab: (fileId: string, fileName: string) => string;
   createCreateAgentTab: () => string;
   createImportAgentTab: () => string;
+  createMemoriesTab: (projectPath?: string) => string;
   closeTab: (id: string, force?: boolean) => Promise<boolean>;
   closeCurrentTab: () => Promise<boolean>;
   switchToTab: (id: string) => void;
@@ -92,16 +93,16 @@ export const useTabState = (): UseTabStateReturn => {
     });
   }, [addTab, tabs, setActiveTab]);
 
-  const createProjectsTab = useCallback((): string | null => {
+  const createProjectsTab = useCallback((): string | null => 
     // Allow multiple projects tabs
-    return addTab({
+     addTab({
       type: 'projects',
       title: 'Projects',
       status: 'idle',
       hasUnsavedChanges: false,
       icon: 'folder'
-    });
-  }, [addTab]);
+    })
+  , [addTab]);
 
   const createAgentsTab = useCallback((): string | null => {
     // Check if agents tab already exists (singleton)
@@ -206,17 +207,15 @@ export const useTabState = (): UseTabStateReturn => {
     });
   }, [addTab, tabs, setActiveTab]);
 
-  const createAgentExecutionTab = useCallback((agent: any, _tabId: string, projectPath?: string): string => {
-    return addTab({
+  const createAgentExecutionTab = useCallback((agent: any, _tabId: string, projectPath?: string): string => addTab({
       type: 'agent-execution',
       title: `Run: ${agent.name}`,
       agentData: agent,
-      projectPath: projectPath,
+      projectPath,
       status: 'idle',
       hasUnsavedChanges: false,
       icon: 'bot'
-    });
-  }, [addTab]);
+    }), [addTab]);
 
   const createCreateAgentTab = useCallback((): string => {
     // Check if create agent tab already exists (singleton)
@@ -252,15 +251,37 @@ export const useTabState = (): UseTabStateReturn => {
     });
   }, [addTab, tabs, setActiveTab]);
 
-  const closeTab = useCallback(async (id: string, force: boolean = false): Promise<boolean> => {
+  const createMemoriesTab = useCallback((projectPath?: string): string => {
+    // Check if memories tab already exists (singleton)
+    const existingTab = tabs.find(tab => tab.type === 'memories');
+    if (existingTab) {
+      // Update project path if different
+      if (projectPath && existingTab.memoriesProjectPath !== projectPath) {
+        updateTab(existingTab.id, { memoriesProjectPath: projectPath });
+      }
+      setActiveTab(existingTab.id);
+      return existingTab.id;
+    }
+
+    return addTab({
+      type: 'memories',
+      title: 'Claude Memories',
+      memoriesProjectPath: projectPath,
+      status: 'idle',
+      hasUnsavedChanges: false,
+      icon: 'brain'
+    });
+  }, [addTab, tabs, setActiveTab, updateTab]);
+
+  const closeTab = useCallback(async (id: string, force = false): Promise<boolean> => {
     const tab = getTabById(id);
-    if (!tab) return true;
+    if (!tab) {return true;}
 
     // Check for unsaved changes
     if (!force && tab.hasUnsavedChanges) {
       // In a real implementation, you'd show a confirmation dialog here
       const confirmed = window.confirm(`Tab "${tab.title}" has unsaved changes. Close anyway?`);
-      if (!confirmed) return false;
+      if (!confirmed) {return false;}
     }
 
     removeTab(id);
@@ -268,12 +289,12 @@ export const useTabState = (): UseTabStateReturn => {
   }, [getTabById, removeTab]);
 
   const closeCurrentTab = useCallback(async (): Promise<boolean> => {
-    if (!activeTabId) return true;
+    if (!activeTabId) {return true;}
     return closeTab(activeTabId);
   }, [activeTabId, closeTab]);
 
   const switchToNextTab = useCallback(() => {
-    if (tabs.length === 0) return;
+    if (tabs.length === 0) {return;}
     
     const currentIndex = tabs.findIndex(tab => tab.id === activeTabId);
     const nextIndex = (currentIndex + 1) % tabs.length;
@@ -281,7 +302,7 @@ export const useTabState = (): UseTabStateReturn => {
   }, [tabs, activeTabId, setActiveTab]);
 
   const switchToPreviousTab = useCallback(() => {
-    if (tabs.length === 0) return;
+    if (tabs.length === 0) {return;}
     
     const currentIndex = tabs.findIndex(tab => tab.id === activeTabId);
     const previousIndex = currentIndex === 0 ? tabs.length - 1 : currentIndex - 1;
@@ -306,21 +327,15 @@ export const useTabState = (): UseTabStateReturn => {
     updateTab(id, { hasUnsavedChanges: hasChanges });
   }, [updateTab]);
 
-  const findTabBySessionId = useCallback((sessionId: string): Tab | undefined => {
-    return tabs.find(tab => tab.type === 'chat' && tab.sessionId === sessionId);
-  }, [tabs]);
+  const findTabBySessionId = useCallback((sessionId: string): Tab | undefined => tabs.find(tab => tab.type === 'chat' && tab.sessionId === sessionId), [tabs]);
 
-  const findTabByAgentRunId = useCallback((agentRunId: string): Tab | undefined => {
-    return tabs.find(tab => tab.type === 'agent' && tab.agentRunId === agentRunId);
-  }, [tabs]);
+  const findTabByAgentRunId = useCallback((agentRunId: string): Tab | undefined => tabs.find(tab => tab.type === 'agent' && tab.agentRunId === agentRunId), [tabs]);
 
-  const findTabByType = useCallback((type: Tab['type']): Tab | undefined => {
-    return tabs.find(tab => tab.type === type);
-  }, [tabs]);
+  const findTabByType = useCallback((type: Tab['type']): Tab | undefined => tabs.find(tab => tab.type === type), [tabs]);
 
-  const canAddTab = useCallback((): boolean => {
-    return tabs.length < 20; // MAX_TABS from context
-  }, [tabs.length]);
+  const canAddTab = useCallback((): boolean => 
+     tabs.length < 20 // MAX_TABS from context
+  , [tabs.length]);
 
   return {
     // State
@@ -344,6 +359,7 @@ export const useTabState = (): UseTabStateReturn => {
     createClaudeFileTab,
     createCreateAgentTab,
     createImportAgentTab,
+    createMemoriesTab,
     closeTab,
     closeCurrentTab,
     switchToTab: setActiveTab,

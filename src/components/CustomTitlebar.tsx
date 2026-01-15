@@ -33,7 +33,7 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => { document.removeEventListener('mousedown', handleClickOutside); };
   }, []);
 
   const handleMinimize = async () => {
@@ -77,8 +77,8 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
     <div 
       className="relative z-[200] h-11 bg-background/95 backdrop-blur-sm flex items-center justify-between select-none border-b border-border/50 tauri-drag"
       data-tauri-drag-region
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => { setIsHovered(true); }}
+      onMouseLeave={() => { setIsHovered(false); }}
     >
       {/* Left side - macOS Traffic Light buttons */}
       <div className="flex items-center space-x-2 pl-5">
@@ -188,7 +188,7 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
           <div className="relative" ref={dropdownRef}>
             <TooltipSimple content="More options" side="bottom">
               <motion.button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                onClick={() => { setIsDropdownOpen(!isDropdownOpen); }}
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.15 }}
                 className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-1"

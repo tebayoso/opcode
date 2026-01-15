@@ -336,7 +336,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
 
   // Filter icons based on search query
   const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return ICON_CATEGORIES;
+    if (!searchQuery.trim()) {return ICON_CATEGORIES;}
 
     const query = searchQuery.toLowerCase();
     const filtered: Record<string, IconItem[]> = {};
@@ -354,9 +354,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   }, [searchQuery]);
 
   // Get all icons for search
-  const allIcons = useMemo(() => {
-    return Object.values(ICON_CATEGORIES).flat();
-  }, []);
+  const allIcons = useMemo(() => Object.values(ICON_CATEGORIES).flat(), []);
 
   const handleSelect = (iconName: string) => {
     onSelect(iconName);
@@ -378,7 +376,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
             <Input
               placeholder="Search icons..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); }}
               className="pl-10"
               autoFocus
             />
@@ -415,9 +413,9 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                             key={item.name}
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => handleSelect(item.name)}
-                            onMouseEnter={() => setHoveredIcon(item.name)}
-                            onMouseLeave={() => setHoveredIcon(null)}
+                            onClick={() => { handleSelect(item.name); }}
+                            onMouseEnter={() => { setHoveredIcon(item.name); }}
+                            onMouseLeave={() => { setHoveredIcon(null); }}
                             className={cn(
                               "p-2.5 rounded-lg transition-colors relative group",
                               "hover:bg-accent hover:text-accent-foreground",
@@ -460,4 +458,4 @@ export const AVAILABLE_ICONS = Object.values(ICON_CATEGORIES)
 // Export icon map for easy access
 export const ICON_MAP = Object.values(ICON_CATEGORIES)
   .flat()
-  .reduce((acc, { name, icon }) => ({ ...acc, [name]: icon }), {} as Record<string, LucideIcon>); 
+  .reduce<Record<string, LucideIcon>>((acc, { name, icon }) => ({ ...acc, [name]: icon }), {}); 

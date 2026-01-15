@@ -9,7 +9,7 @@ import { Toast, ToastContainer } from "@/components/ui/toast";
 import { api, type Agent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import MDEditor from "@uiw/react-md-editor";
-import { type AgentIconName } from "./CCAgents";
+import type { AgentIconName } from "./CCAgents";
 import { IconPicker, ICON_MAP } from "./IconPicker";
 
 
@@ -45,7 +45,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({
   className,
 }) => {
   const [name, setName] = useState(agent?.name || "");
-  const [selectedIcon, setSelectedIcon] = useState<AgentIconName>((agent?.icon as AgentIconName) || "bot");
+  const [selectedIcon, setSelectedIcon] = useState<AgentIconName>((agent?.icon!) || "bot");
   const [systemPrompt, setSystemPrompt] = useState(agent?.system_prompt || "");
   const [defaultTask, setDefaultTask] = useState(agent?.default_task || "");
   const [model, setModel] = useState(agent?.model || "sonnet");
@@ -204,7 +204,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({
                   <Input
                     id="name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => { setName(e.target.value); }}
                     placeholder="e.g., Code Assistant"
                     required
                     className="h-9"
@@ -216,7 +216,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({
                   <motion.div
                     whileTap={{ scale: 0.97 }}
                     transition={{ duration: 0.15 }}
-                    onClick={() => setShowIconPicker(true)}
+                    onClick={() => { setShowIconPicker(true); }}
                     className="h-9 px-3 py-2 bg-background border border-input rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2">
@@ -241,7 +241,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({
                 <div className="flex flex-col sm:flex-row gap-2">
                   <motion.button
                     type="button"
-                    onClick={() => setModel("sonnet")}
+                    onClick={() => { setModel("sonnet"); }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ duration: 0.15 }}
                     className={cn(
@@ -265,7 +265,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({
                   
                   <motion.button
                     type="button"
-                    onClick={() => setModel("opus")}
+                    onClick={() => { setModel("opus"); }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ duration: 0.15 }}
                     className={cn(
@@ -300,7 +300,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({
                   type="text"
                   placeholder="e.g., Review this code for security issues"
                   value={defaultTask}
-                  onChange={(e) => setDefaultTask(e.target.value)}
+                  onChange={(e) => { setDefaultTask(e.target.value); }}
                   className="h-9"
                 />
                 <p className="text-caption text-muted-foreground">
@@ -320,7 +320,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({
               <div className="rounded-md border border-border overflow-hidden" data-color-mode="dark">
                 <MDEditor
                   value={systemPrompt}
-                  onChange={(val) => setSystemPrompt(val || "")}
+                  onChange={(val) => { setSystemPrompt(val || ""); }}
                   preview="edit"
                   height={350}
                   visibleDragbar={false}
@@ -337,7 +337,7 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({
           <Toast
             message={toast.message}
             type={toast.type}
-            onDismiss={() => setToast(null)}
+            onDismiss={() => { setToast(null); }}
           />
         )}
       </ToastContainer>
@@ -346,11 +346,11 @@ export const CreateAgent: React.FC<CreateAgentProps> = ({
       <IconPicker
         value={selectedIcon}
         onSelect={(iconName) => {
-          setSelectedIcon(iconName as AgentIconName);
+          setSelectedIcon(iconName);
           setShowIconPicker(false);
         }}
         isOpen={showIconPicker}
-        onClose={() => setShowIconPicker(false)}
+        onClose={() => { setShowIconPicker(false); }}
       />
     </motion.div>
   );

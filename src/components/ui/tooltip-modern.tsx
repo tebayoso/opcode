@@ -54,8 +54,7 @@ export const TooltipSimple: React.FC<TooltipSimpleProps> = ({
   delayDuration = 200,
   className,
   contentClassName,
-}) => {
-  return (
+}) => (
     <Tooltip delayDuration={delayDuration}>
       <TooltipTrigger asChild className={className}>
         {children}
@@ -65,6 +64,5 @@ export const TooltipSimple: React.FC<TooltipSimpleProps> = ({
       </TooltipContent>
     </Tooltip>
   )
-}
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }

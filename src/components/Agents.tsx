@@ -44,7 +44,7 @@ export const Agents: React.FC = () => {
       loadRunningAgents();
     }, 3000); // Refresh every 3 seconds
 
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); };
   }, []);
 
   const loadAgents = async () => {
@@ -105,7 +105,7 @@ export const Agents: React.FC = () => {
   };
 
   const handleDeleteAgent = async () => {
-    if (!agentToDelete || !agentToDelete.id) return;
+    if (!agentToDelete?.id) {return;}
     
     try {
       await api.deleteAgent(agentToDelete.id);
@@ -130,7 +130,7 @@ export const Agents: React.FC = () => {
       });
 
       if (selected) {
-        const importedAgent = await api.importAgentFromFile(selected as string);
+        const importedAgent = await api.importAgentFromFile(selected);
         setToast({ message: `Imported agent: ${importedAgent.name}`, type: 'success' });
         loadAgents();
       }
@@ -176,7 +176,7 @@ export const Agents: React.FC = () => {
   if (showCreateAgent) {
     return (
       <CreateAgent 
-        onBack={() => setShowCreateAgent(false)}
+        onBack={() => { setShowCreateAgent(false); }}
         onAgentCreated={() => {
           setShowCreateAgent(false);
           loadAgents(); // Reload agents after creation
@@ -190,7 +190,7 @@ export const Agents: React.FC = () => {
     return (
       <CreateAgent
         agent={editingAgent}
-        onBack={() => setEditingAgent(null)}
+        onBack={() => { setEditingAgent(null); }}
         onAgentCreated={() => {
           setEditingAgent(null);
           loadAgents(); // Reload agents after update
@@ -225,14 +225,14 @@ export const Agents: React.FC = () => {
                     <FileJson className="w-4 h-4 mr-2" />
                     From File
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowGitHubBrowser(true)}>
+                  <DropdownMenuItem onClick={() => { setShowGitHubBrowser(true); }}>
                     <Globe className="w-4 h-4 mr-2" />
                     From GitHub
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button onClick={() => setShowCreateAgent(true)}>
+              <Button onClick={() => { setShowCreateAgent(true); }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Agent
               </Button>
@@ -252,7 +252,7 @@ export const Agents: React.FC = () => {
               <Toast 
                 message={toast.message} 
                 type={toast.type}
-                onDismiss={() => setToast(null)}
+                onDismiss={() => { setToast(null); }}
               />
             </motion.div>
           )}
@@ -261,7 +261,7 @@ export const Agents: React.FC = () => {
       {showGitHubBrowser && (
         <GitHubAgentBrowser
           isOpen={showGitHubBrowser}
-          onClose={() => setShowGitHubBrowser(false)}
+          onClose={() => { setShowGitHubBrowser(false); }}
           onImportSuccess={() => {
             loadAgents();
             setShowGitHubBrowser(false);
@@ -277,14 +277,14 @@ export const Agents: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center"
-            onClick={() => setShowDeleteDialog(false)}
+            onClick={() => { setShowDeleteDialog(false); }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               className="bg-card p-6 rounded-lg shadow-lg max-w-md w-full mx-4"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); }}
             >
               <h3 className="text-lg font-semibold mb-4">Delete Agent</h3>
               <p className="text-muted-foreground mb-6">
@@ -293,7 +293,7 @@ export const Agents: React.FC = () => {
               <div className="flex gap-3 justify-end">
                 <Button
                   variant="outline"
-                  onClick={() => setShowDeleteDialog(false)}
+                  onClick={() => { setShowDeleteDialog(false); }}
                 >
                   Cancel
                 </Button>
@@ -335,7 +335,7 @@ export const Agents: React.FC = () => {
                   <p className="text-muted-foreground mb-4">
                     Create your first agent to get started
                   </p>
-                  <Button onClick={() => setShowCreateAgent(true)}>
+                  <Button onClick={() => { setShowCreateAgent(true); }}>
                     <Plus className="w-4 h-4 mr-2" />
                     Create Agent
                   </Button>
@@ -359,7 +359,7 @@ export const Agents: React.FC = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setEditingAgent(agent)}>
+                            <DropdownMenuItem onClick={() => { setEditingAgent(agent); }}>
                               <Edit className="w-4 h-4 mr-2" />
                               Edit
                             </DropdownMenuItem>

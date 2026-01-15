@@ -29,7 +29,7 @@ export class ResourceMonitor {
    * Start monitoring resource usage with periodic sampling
    * @param intervalMs - Sampling interval in milliseconds (default: 60000ms = 1 minute)
    */
-  startMonitoring(intervalMs: number = 60000): void {
+  startMonitoring(intervalMs = 60000): void {
     if (this.isMonitoring) {
       console.warn('Resource monitoring is already active');
       return;

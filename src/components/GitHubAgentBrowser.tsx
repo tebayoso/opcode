@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { api, type GitHubAgentFile, type AgentExport, type Agent } from "@/lib/api";
-import { type AgentIconName } from "./CCAgents";
 import { ICON_MAP } from "./IconPicker";
 import { open } from "@tauri-apps/plugin-shell";
 
@@ -111,7 +110,7 @@ export const GitHubAgentBrowser: React.FC<GitHubAgentBrowserProps> = ({
   };
 
   const handleImportAgent = async () => {
-    if (!selectedAgent?.file) return;
+    if (!selectedAgent?.file) {return;}
 
     try {
       setImporting(true);
@@ -137,15 +136,13 @@ export const GitHubAgentBrowser: React.FC<GitHubAgentBrowserProps> = ({
     agent.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getAgentDisplayName = (fileName: string) => {
-    return fileName.replace(".opcode.json", "").replace(/-/g, " ")
+  const getAgentDisplayName = (fileName: string) => fileName.replace(".opcode.json", "").replace(/-/g, " ")
       .split(" ")
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
-  };
 
   const renderIcon = (iconName: string) => {
-    const Icon = ICON_MAP[iconName as AgentIconName] || ICON_MAP.bot;
+    const Icon = ICON_MAP[iconName] || ICON_MAP.bot;
     return <Icon className="h-8 w-8" />;
   };
 
@@ -193,7 +190,7 @@ export const GitHubAgentBrowser: React.FC<GitHubAgentBrowserProps> = ({
               <Input
                 placeholder="Search agents..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); }}
                 className="pl-10"
               />
             </div>
@@ -285,7 +282,7 @@ export const GitHubAgentBrowser: React.FC<GitHubAgentBrowserProps> = ({
       {/* Agent Preview Dialog */}
       <AnimatePresence>
         {selectedAgent && (
-          <Dialog open={!!selectedAgent} onOpenChange={() => setSelectedAgent(null)}>
+          <Dialog open={!!selectedAgent} onOpenChange={() => { setSelectedAgent(null); }}>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
               <DialogHeader>
                 <DialogTitle>Agent Preview</DialogTitle>
@@ -354,7 +351,7 @@ export const GitHubAgentBrowser: React.FC<GitHubAgentBrowserProps> = ({
                 <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
                   <Button
                     variant="outline"
-                    onClick={() => setSelectedAgent(null)}
+                    onClick={() => { setSelectedAgent(null); }}
                   >
                     Cancel
                   </Button>

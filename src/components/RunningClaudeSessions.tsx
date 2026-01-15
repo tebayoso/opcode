@@ -34,7 +34,7 @@ export const RunningClaudeSessions: React.FC<RunningClaudeSessionsProps> = ({
     
     // Poll for updates every 5 seconds
     const interval = setInterval(loadRunningSessions, 5000);
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); };
   }, []);
 
   const loadRunningSessions = async () => {
@@ -112,7 +112,7 @@ export const RunningClaudeSessions: React.FC<RunningClaudeSessionsProps> = ({
             ? session.process_type.ClaudeSession.session_id 
             : null;
           
-          if (!sessionId) return null;
+          if (!sessionId) {return null;}
 
           return (
             <motion.div
@@ -124,7 +124,7 @@ export const RunningClaudeSessions: React.FC<RunningClaudeSessionsProps> = ({
               <Card className="transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer">
                 <CardContent 
                   className="p-3"
-                  onClick={() => handleResumeSession(session)}
+                  onClick={() => { handleResumeSession(session); }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">

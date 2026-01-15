@@ -42,18 +42,14 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
   const ITEMS_PER_PAGE = 10;
 
   // Memoized formatters to prevent recreation on each render
-  const formatCurrency = useMemo(() => (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = useMemo(() => (amount: number): string => new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    }).format(amount);
-  }, []);
+    }).format(amount), []);
 
-  const formatNumber = useMemo(() => (num: number): string => {
-    return new Intl.NumberFormat('en-US').format(num);
-  }, []);
+  const formatNumber = useMemo(() => (num: number): string => new Intl.NumberFormat('en-US').format(num), []);
 
   const formatTokens = useMemo(() => (num: number): string => {
     if (num >= 1_000_000) {
@@ -175,7 +171,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
 
   // Preload adjacent tabs when idle
   useEffect(() => {
-    if (!stats || loading) return;
+    if (!stats || loading) {return;}
     
     const tabOrder = ["overview", "models", "projects", "sessions", "timeline"];
     const currentIndex = tabOrder.indexOf(activeTab);
@@ -202,7 +198,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
 
   // Memoize expensive computations
   const summaryCards = useMemo(() => {
-    if (!stats) return null;
+    if (!stats) {return null;}
     
     return (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -251,7 +247,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
 
   // Memoize the most used models section
   const mostUsedModels = useMemo(() => {
-    if (!stats?.by_model) return null;
+    if (!stats?.by_model) {return null;}
     
     return stats.by_model.slice(0, 3).map((model) => (
       <div key={model.model} className="flex items-center justify-between">
@@ -272,7 +268,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
 
   // Memoize top projects section
   const topProjects = useMemo(() => {
-    if (!stats?.by_project) return null;
+    if (!stats?.by_project) {return null;}
     
     return stats.by_project.slice(0, 3).map((project) => (
       <div key={project.project_path} className="flex items-center justify-between">
@@ -293,7 +289,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
 
   // Memoize timeline chart data
   const timelineChartData = useMemo(() => {
-    if (!stats?.by_date || stats.by_date.length === 0) return null;
+    if (!stats?.by_date || stats.by_date.length === 0) {return null;}
     
     const maxCost = Math.max(...stats.by_date.map(d => d.total_cost), 0);
     const halfMaxCost = maxCost / 2;
@@ -332,7 +328,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
                     key={range}
                     variant={selectedDateRange === range ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSelectedDateRange(range)}
+                    onClick={() => { setSelectedDateRange(range); }}
                     disabled={loading}
                   >
                     {range === "all" ? "All Time" : range === "7d" ? "Last 7 Days" : "Last 30 Days"}
@@ -521,7 +517,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => setProjectsPage(prev => Math.max(1, prev - 1))}
+                                      onClick={() => { setProjectsPage(prev => Math.max(1, prev - 1)); }}
                                       disabled={projectsPage === 1}
                                     >
                                       <ChevronLeft className="h-4 w-4" />
@@ -532,7 +528,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => setProjectsPage(prev => Math.min(totalPages, prev + 1))}
+                                      onClick={() => { setProjectsPage(prev => Math.min(totalPages, prev + 1)); }}
                                       disabled={projectsPage === totalPages}
                                     >
                                       <ChevronRight className="h-4 w-4" />
@@ -603,7 +599,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => setSessionsPage(prev => Math.max(1, prev - 1))}
+                                      onClick={() => { setSessionsPage(prev => Math.max(1, prev - 1)); }}
                                       disabled={sessionsPage === 1}
                                     >
                                       <ChevronLeft className="h-4 w-4" />
@@ -614,7 +610,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => setSessionsPage(prev => Math.min(totalPages, prev + 1))}
+                                      onClick={() => { setSessionsPage(prev => Math.min(totalPages, prev + 1)); }}
                                       disabled={sessionsPage === totalPages}
                                     >
                                       <ChevronRight className="h-4 w-4" />
@@ -679,7 +675,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
                                       </p>
                                     </div>
                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                                      <div className="border-4 border-transparent border-t-border"></div>
+                                      <div className="border-4 border-transparent border-t-border" />
                                     </div>
                                   </div>
                                   

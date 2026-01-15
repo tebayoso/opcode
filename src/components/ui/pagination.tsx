@@ -47,7 +47,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       <Button
         variant="outline"
         size="icon"
-        onClick={() => onPageChange(currentPage - 1)}
+        onClick={() => { onPageChange(currentPage - 1); }}
         disabled={currentPage <= 1}
         className="h-8 w-8"
       >
@@ -61,7 +61,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       <Button
         variant="outline"
         size="icon"
-        onClick={() => onPageChange(currentPage + 1)}
+        onClick={() => { onPageChange(currentPage + 1); }}
         disabled={currentPage >= totalPages}
         className="h-8 w-8"
       >

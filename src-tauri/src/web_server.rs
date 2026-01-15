@@ -201,6 +201,57 @@ async fn mcp_list() -> Json<ApiResponse<Vec<serde_json::Value>>> {
     Json(ApiResponse::success(vec![]))
 }
 
+/// Find global config files in ~/.claude/
+async fn find_global_config_files() -> Json<ApiResponse<Vec<commands::claude::GlobalConfigFile>>> {
+    match commands::claude::find_global_config_files().await {
+        Ok(files) => Json(ApiResponse::success(files)),
+        Err(e) => Json(ApiResponse::error(e)),
+    }
+}
+
+/// Find CLAUDE.md files in a project
+async fn find_claude_md_files(
+    axum::extract::Query(params): axum::extract::Query<QueryParams>,
+) -> Json<ApiResponse<Vec<commands::claude::ClaudeMdFile>>> {
+    let project_path = params.project_path.unwrap_or_default();
+    if project_path.is_empty() {
+        return Json(ApiResponse::error("project_path query parameter is required".to_string()));
+    }
+    match commands::claude::find_claude_md_files(project_path).await {
+        Ok(files) => Json(ApiResponse::success(files)),
+        Err(e) => Json(ApiResponse::error(e)),
+    }
+}
+
+/// Read a Claude.md or config file content
+async fn read_claude_md_file(
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Json<ApiResponse<String>> {
+    let file_path = params.get("path").cloned().unwrap_or_default();
+    if file_path.is_empty() {
+        return Json(ApiResponse::error("path query parameter is required".to_string()));
+    }
+    match commands::claude::read_claude_md_file(file_path).await {
+        Ok(content) => Json(ApiResponse::success(content)),
+        Err(e) => Json(ApiResponse::error(e)),
+    }
+}
+
+/// Save a Claude.md or config file content
+async fn save_claude_md_file(
+    axum::Json(payload): axum::Json<std::collections::HashMap<String, String>>,
+) -> Json<ApiResponse<String>> {
+    let file_path = payload.get("path").cloned().unwrap_or_default();
+    let content = payload.get("content").cloned().unwrap_or_default();
+    if file_path.is_empty() {
+        return Json(ApiResponse::error("path is required".to_string()));
+    }
+    match commands::claude::save_claude_md_file(file_path, content).await {
+        Ok(result) => Json(ApiResponse::success(result)),
+        Err(e) => Json(ApiResponse::error(e)),
+    }
+}
+
 /// Load session history from JSONL file
 async fn load_session_history(
     Path((session_id, project_id)): Path<(String, String)>,
@@ -802,6 +853,11 @@ pub async fn create_web_server(port: u16) -> Result<(), Box<dyn std::error::Erro
         .route("/api/slash-commands", get(list_slash_commands))
         // MCP
         .route("/api/mcp/servers", get(mcp_list))
+        // Config files / Memories
+        .route("/api/config/global", get(find_global_config_files))
+        .route("/api/config/project", get(find_claude_md_files))
+        .route("/api/config/file", get(read_claude_md_file))
+        .route("/api/config/file", axum::routing::post(save_claude_md_file))
         // Session history
         .route(
             "/api/sessions/{session_id}/history/{project_id}",

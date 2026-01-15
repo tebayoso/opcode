@@ -56,9 +56,7 @@ export interface Session {
 /**
  * Represents the settings from ~/.claude/settings.json
  */
-export interface ClaudeSettings {
-  [key: string]: any;
-}
+export type ClaudeSettings = Record<string, any>;
 
 /**
  * Represents the Claude Code version status
@@ -80,6 +78,24 @@ export interface ClaudeMdFile {
   relative_path: string;
   /** Absolute path to the file */
   absolute_path: string;
+  /** File size in bytes */
+  size: number;
+  /** Last modified timestamp */
+  modified: number;
+}
+
+/**
+ * Represents a global config file from ~/.claude/
+ */
+export interface GlobalConfigFile {
+  /** File name */
+  name: string;
+  /** Relative path from ~/.claude/ */
+  relative_path: string;
+  /** Absolute path to the file */
+  absolute_path: string;
+  /** Category of the config file */
+  category: string;
   /** File size in bytes */
   size: number;
   /** Last modified timestamp */
@@ -418,6 +434,109 @@ export interface SlashCommand {
 }
 
 /**
+ * Represents a supporting file in a skill directory
+ */
+export interface SupportingFile {
+  name: string;
+  path: string;
+  file_type: string;
+}
+
+/**
+ * Represents a Claude skill
+ */
+export interface Skill {
+  /** Unique identifier for the skill */
+  id: string;
+  /** Skill name (derived from folder name) */
+  name: string;
+  /** Skill scope: "project" or "user" */
+  scope: string;
+  /** Path to the skill directory */
+  dir_path: string;
+  /** Path to the main SKILL.md file */
+  file_path: string;
+  /** File type: "markdown" or "json" */
+  file_type: string;
+  /** Skill content (markdown or JSON) */
+  content: string;
+  /** Optional description from frontmatter */
+  description?: string;
+  /** Allowed tools from frontmatter */
+  allowed_tools: string[];
+  /** Supporting files in the skill directory */
+  supporting_files: SupportingFile[];
+}
+
+// =====================================
+// Plugin Types
+// =====================================
+
+/**
+ * Represents a plugin marketplace
+ */
+export interface Marketplace {
+  /** Marketplace name */
+  name: string;
+  /** Source (GitHub repo, URL, or local path) */
+  source: string;
+  /** Source type: "github", "url", "local", "git" */
+  source_type: string;
+  /** Optional description */
+  description?: string;
+  /** Number of plugins in this marketplace */
+  plugins_count: number;
+}
+
+/**
+ * Represents a plugin author
+ */
+export interface PluginAuthor {
+  name: string;
+  email?: string;
+}
+
+/**
+ * Represents a plugin component (command, agent, skill, hook, or MCP server)
+ */
+export interface PluginComponent {
+  /** Component name */
+  name: string;
+  /** Type: "command", "agent", "skill", "hook", "mcp" */
+  component_type: string;
+  /** Optional description */
+  description?: string;
+}
+
+/**
+ * Represents a Claude plugin
+ */
+export interface Plugin {
+  /** Plugin name */
+  name: string;
+  /** Version string */
+  version?: string;
+  /** Plugin description */
+  description?: string;
+  /** Author information */
+  author?: PluginAuthor;
+  /** Category (development, productivity, learning, security) */
+  category?: string;
+  /** Marketplace source (if from marketplace) */
+  marketplace?: string;
+  /** Whether the plugin is installed */
+  installed: boolean;
+  /** Whether the plugin is enabled */
+  enabled: boolean;
+  /** Installation scope: "local", "project", "managed" */
+  scope?: string;
+  /** Path to the plugin directory */
+  path?: string;
+  /** List of plugin components */
+  components: PluginComponent[];
+}
+
+/**
  * Result of adding a server
  */
 export interface AddServerResult {
@@ -677,6 +796,19 @@ export const api = {
     }
   },
 
+  /**
+   * Finds all global config files in ~/.claude/ directory
+   * @returns Promise resolving to an array of global config files
+   */
+  async findGlobalConfigFiles(): Promise<GlobalConfigFile[]> {
+    try {
+      return await apiCall<GlobalConfigFile[]>("find_global_config_files", {});
+    } catch (error) {
+      console.error("Failed to find global config files:", error);
+      throw error;
+    }
+  },
+
   // Agent API methods
   
   /**
@@ -768,7 +900,7 @@ export const api = {
    */
   async deleteAgent(id: number): Promise<void> {
     try {
-      return await apiCall('delete_agent', { id });
+      await apiCall('delete_agent', { id }); 
     } catch (error) {
       console.error("Failed to delete agent:", error);
       throw error;
@@ -996,7 +1128,7 @@ export const api = {
    */
   async streamSessionOutput(runId: number): Promise<void> {
     try {
-      return await apiCall<void>('stream_session_output', { runId });
+      await apiCall<void>('stream_session_output', { runId }); 
     } catch (error) {
       console.error("Failed to start streaming session output:", error);
       throw new Error(`Failed to start streaming session output: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -1403,7 +1535,7 @@ export const api = {
     args: string[] = [],
     env: Record<string, string> = {},
     url?: string,
-    scope: string = "local"
+    scope = "local"
   ): Promise<AddServerResult> {
     try {
       return await apiCall<AddServerResult>("mcp_add", {
@@ -1463,7 +1595,7 @@ export const api = {
   /**
    * Adds an MCP server from JSON configuration
    */
-  async mcpAddJson(name: string, jsonConfig: string, scope: string = "local"): Promise<AddServerResult> {
+  async mcpAddJson(name: string, jsonConfig: string, scope = "local"): Promise<AddServerResult> {
     try {
       return await apiCall<AddServerResult>("mcp_add_json", { name, jsonConfig, scope });
     } catch (error) {
@@ -1475,7 +1607,7 @@ export const api = {
   /**
    * Imports MCP servers from Claude Desktop
    */
-  async mcpAddFromClaudeDesktop(scope: string = "local"): Promise<ImportResult> {
+  async mcpAddFromClaudeDesktop(scope = "local"): Promise<ImportResult> {
     try {
       return await apiCall<ImportResult>("mcp_add_from_claude_desktop", { scope });
     } catch (error) {
@@ -1576,7 +1708,7 @@ export const api = {
    */
   async setClaudeBinaryPath(path: string): Promise<void> {
     try {
-      return await apiCall<void>("set_claude_binary_path", { path });
+      await apiCall<void>("set_claude_binary_path", { path }); 
     } catch (error) {
       console.error("Failed to set Claude binary path:", error);
       throw error;
@@ -1651,11 +1783,11 @@ export const api = {
     updates: Record<string, any>
   ): Promise<void> {
     try {
-      return await apiCall<void>("storage_update_row", {
+      await apiCall<void>("storage_update_row", {
         tableName,
         primaryKeyValues,
         updates,
-      });
+      }); 
     } catch (error) {
       console.error("Failed to update row:", error);
       throw error;
@@ -1673,10 +1805,10 @@ export const api = {
     primaryKeyValues: Record<string, any>
   ): Promise<void> {
     try {
-      return await apiCall<void>("storage_delete_row", {
+      await apiCall<void>("storage_delete_row", {
         tableName,
         primaryKeyValues,
-      });
+      }); 
     } catch (error) {
       console.error("Failed to delete row:", error);
       throw error;
@@ -1724,7 +1856,7 @@ export const api = {
    */
   async storageResetDatabase(): Promise<void> {
     try {
-      return await apiCall<void>("storage_reset_database");
+      await apiCall<void>("storage_reset_database"); 
     } catch (error) {
       console.error("Failed to reset database:", error);
       throw error;
@@ -1938,6 +2070,354 @@ export const api = {
       return await apiCall<string>("slash_command_delete", { commandId, projectPath });
     } catch (error) {
       console.error("Failed to delete slash command:", error);
+      throw error;
+    }
+  },
+
+  // =====================================
+  // Skills API
+  // =====================================
+
+  /**
+   * Lists all available skills
+   * @param projectPath - Optional project path to include project-specific skills
+   * @returns Promise resolving to array of skills
+   */
+  async skillsList(projectPath?: string): Promise<Skill[]> {
+    try {
+      return await apiCall<Skill[]>("skills_list", { projectPath });
+    } catch (error) {
+      console.error("Failed to list skills:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gets a single skill by ID
+   * @param skillId - Unique identifier of the skill
+   * @param projectPath - Optional project path
+   * @returns Promise resolving to the skill
+   */
+  async skillGet(skillId: string, projectPath?: string): Promise<Skill> {
+    try {
+      return await apiCall<Skill>("skill_get", { skillId, projectPath });
+    } catch (error) {
+      console.error("Failed to get skill:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Creates or updates a skill
+   * @param scope - Skill scope: "project" or "user"
+   * @param name - Skill name (folder name)
+   * @param content - Content of the skill
+   * @param fileType - File type: "markdown" or "json"
+   * @param description - Optional description
+   * @param allowedTools - List of allowed tools for this skill
+   * @param projectPath - Required for project scope skills
+   * @returns Promise resolving to the saved skill
+   */
+  async skillSave(
+    scope: string,
+    name: string,
+    content: string,
+    fileType: string,
+    description: string | undefined,
+    allowedTools: string[],
+    projectPath?: string
+  ): Promise<Skill> {
+    try {
+      return await apiCall<Skill>("skill_save", {
+        scope,
+        name,
+        content,
+        fileType,
+        description,
+        allowedTools,
+        projectPath
+      });
+    } catch (error) {
+      console.error("Failed to save skill:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Deletes a skill
+   * @param skillId - Unique identifier of the skill to delete
+   * @param projectPath - Optional project path for deleting project skills
+   * @returns Promise resolving to deletion message
+   */
+  async skillDelete(skillId: string, projectPath?: string): Promise<string> {
+    try {
+      return await apiCall<string>("skill_delete", { skillId, projectPath });
+    } catch (error) {
+      console.error("Failed to delete skill:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reads a supporting file from a skill
+   * @param filePath - Path to the file
+   * @returns Promise resolving to file content
+   */
+  async skillReadFile(filePath: string): Promise<string> {
+    try {
+      return await apiCall<string>("skill_read_file", { filePath });
+    } catch (error) {
+      console.error("Failed to read skill file:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Saves a supporting file for a skill
+   * @param skillDir - Path to the skill directory
+   * @param fileName - Name of the file to save
+   * @param content - Content to write
+   * @returns Promise resolving to file path
+   */
+  async skillSaveFile(skillDir: string, fileName: string, content: string): Promise<string> {
+    try {
+      return await apiCall<string>("skill_save_file", { skillDir, fileName, content });
+    } catch (error) {
+      console.error("Failed to save skill file:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Deletes a supporting file from a skill
+   * @param filePath - Path to the file to delete
+   * @returns Promise resolving to deletion message
+   */
+  async skillDeleteFile(filePath: string): Promise<string> {
+    try {
+      return await apiCall<string>("skill_delete_file", { filePath });
+    } catch (error) {
+      console.error("Failed to delete skill file:", error);
+      throw error;
+    }
+  },
+
+  // =====================================
+  // Plugins API
+  // =====================================
+
+  /**
+   * Lists all registered plugin marketplaces
+   * @returns Promise resolving to array of marketplaces
+   */
+  async pluginsListMarketplaces(): Promise<Marketplace[]> {
+    try {
+      return await apiCall<Marketplace[]>("plugins_list_marketplaces");
+    } catch (error) {
+      console.error("Failed to list marketplaces:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Adds a new marketplace
+   * @param source - GitHub repo (owner/repo), URL, or local path
+   * @returns Promise resolving to the added marketplace
+   */
+  async pluginsAddMarketplace(source: string): Promise<Marketplace> {
+    try {
+      return await apiCall<Marketplace>("plugins_add_marketplace", { source });
+    } catch (error) {
+      console.error("Failed to add marketplace:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Removes a marketplace
+   * @param source - The marketplace source to remove
+   * @returns Promise resolving when removed
+   */
+  async pluginsRemoveMarketplace(source: string): Promise<void> {
+    try {
+      await apiCall("plugins_remove_marketplace", { source });
+    } catch (error) {
+      console.error("Failed to remove marketplace:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lists all installed plugins
+   * @returns Promise resolving to array of installed plugins
+   */
+  async pluginsListInstalled(): Promise<Plugin[]> {
+    try {
+      return await apiCall<Plugin[]>("plugins_list_installed");
+    } catch (error) {
+      console.error("Failed to list installed plugins:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gets details for a specific plugin
+   * @param pluginPath - Path to the plugin directory
+   * @returns Promise resolving to the plugin details
+   */
+  async pluginsGetDetails(pluginPath: string): Promise<Plugin> {
+    try {
+      return await apiCall<Plugin>("plugins_get_details", { pluginPath });
+    } catch (error) {
+      console.error("Failed to get plugin details:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Installs a plugin from a marketplace
+   * @param pluginName - Name of the plugin to install
+   * @param marketplace - Marketplace source
+   * @param scope - Installation scope: "local" or "project"
+   * @returns Promise resolving to the installed plugin
+   */
+  async pluginsInstall(pluginName: string, marketplace: string, scope: string): Promise<Plugin> {
+    try {
+      return await apiCall<Plugin>("plugins_install", { pluginName, marketplace, scope });
+    } catch (error) {
+      console.error("Failed to install plugin:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Uninstalls a plugin
+   * @param pluginName - Name of the plugin to uninstall
+   * @returns Promise resolving when uninstalled
+   */
+  async pluginsUninstall(pluginName: string): Promise<void> {
+    try {
+      await apiCall("plugins_uninstall", { pluginName });
+    } catch (error) {
+      console.error("Failed to uninstall plugin:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Enables a plugin
+   * @param pluginName - Name of the plugin to enable
+   * @returns Promise resolving when enabled
+   */
+  async pluginsEnable(pluginName: string): Promise<void> {
+    try {
+      await apiCall("plugins_enable", { pluginName });
+    } catch (error) {
+      console.error("Failed to enable plugin:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Disables a plugin
+   * @param pluginName - Name of the plugin to disable
+   * @returns Promise resolving when disabled
+   */
+  async pluginsDisable(pluginName: string): Promise<void> {
+    try {
+      await apiCall("plugins_disable", { pluginName });
+    } catch (error) {
+      console.error("Failed to disable plugin:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Fetches available plugins from a marketplace
+   * @param source - Marketplace source
+   * @returns Promise resolving to array of available plugins
+   */
+  async pluginsFetchMarketplace(source: string): Promise<Plugin[]> {
+    try {
+      return await apiCall<Plugin[]>("plugins_fetch_marketplace", { source });
+    } catch (error) {
+      console.error("Failed to fetch marketplace plugins:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reads a plugin's README
+   * @param pluginPath - Path to the plugin directory
+   * @returns Promise resolving to README content
+   */
+  async pluginsReadReadme(pluginPath: string): Promise<string> {
+    try {
+      return await apiCall<string>("plugins_read_readme", { pluginPath });
+    } catch (error) {
+      console.error("Failed to read plugin README:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reads a plugin component file
+   * @param pluginPath - Path to the plugin directory
+   * @param componentType - Type: "command", "agent", "skill", "hook", "mcp"
+   * @param componentName - Name of the component
+   * @returns Promise resolving to component content
+   */
+  async pluginsReadComponent(pluginPath: string, componentType: string, componentName: string): Promise<string> {
+    try {
+      return await apiCall<string>("plugins_read_component", { pluginPath, componentType, componentName });
+    } catch (error) {
+      console.error("Failed to read plugin component:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Saves a plugin component file
+   * @param pluginPath - Path to the plugin directory
+   * @param componentType - Type: "command", "agent", "skill", "hook", "mcp"
+   * @param componentName - Name of the component
+   * @param content - Content to save
+   * @returns Promise resolving when saved
+   */
+  async pluginsSaveComponent(pluginPath: string, componentType: string, componentName: string, content: string): Promise<void> {
+    try {
+      await apiCall("plugins_save_component", { pluginPath, componentType, componentName, content });
+    } catch (error) {
+      console.error("Failed to save plugin component:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Creates a new plugin
+   * @param name - Plugin name
+   * @param description - Plugin description
+   * @returns Promise resolving to the created plugin
+   */
+  async pluginsCreate(name: string, description: string): Promise<Plugin> {
+    try {
+      return await apiCall<Plugin>("plugins_create", { name, description });
+    } catch (error) {
+      console.error("Failed to create plugin:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Deletes a plugin
+   * @param pluginPath - Path to the plugin directory
+   * @returns Promise resolving when deleted
+   */
+  async pluginsDelete(pluginPath: string): Promise<void> {
+    try {
+      await apiCall("plugins_delete", { pluginPath });
+    } catch (error) {
+      console.error("Failed to delete plugin:", error);
       throw error;
     }
   },

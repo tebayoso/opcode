@@ -2,7 +2,7 @@
  * Hooks configuration manager for Claude Code hooks
  */
 
-import {
+import type {
   HooksConfiguration,
   HookMatcher,
   HookValidationResult,
@@ -124,7 +124,7 @@ export class HooksManager {
     // Validate events with matchers
     for (const event of matcherEvents) {
       const matchers = hooks[event];
-      if (!matchers || !Array.isArray(matchers)) continue;
+      if (!matchers || !Array.isArray(matchers)) {continue;}
 
       for (const matcher of matchers) {
         // Validate regex pattern if provided
@@ -143,7 +143,7 @@ export class HooksManager {
         // Validate commands
         if (matcher.hooks && Array.isArray(matcher.hooks)) {
           for (const hook of matcher.hooks) {
-            if (!hook.command || !hook.command.trim()) {
+            if (!hook.command?.trim()) {
               errors.push({
                 event,
                 matcher: matcher.matcher,
@@ -167,10 +167,10 @@ export class HooksManager {
     // Validate events without matchers
     for (const event of directEvents) {
       const directHooks = hooks[event];
-      if (!directHooks || !Array.isArray(directHooks)) continue;
+      if (!directHooks || !Array.isArray(directHooks)) {continue;}
 
       for (const hook of directHooks) {
-        if (!hook.command || !hook.command.trim()) {
+        if (!hook.command?.trim()) {
           errors.push({
             event,
             message: 'Empty command'

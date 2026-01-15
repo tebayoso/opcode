@@ -122,13 +122,11 @@ export function AgentRunOutputViewer({
   }, [agentRunId, tabId, updateTabTitle, updateTabStatus]);
 
   // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      unlistenRefs.current.forEach(unlisten => unlisten());
+  useEffect(() => () => {
+      unlistenRefs.current.forEach(unlisten => { unlisten(); });
       unlistenRefs.current = [];
       hasSetupListenersRef.current = false;
-    };
-  }, []);
+    }, []);
 
   // Auto-scroll when messages change
   useEffect(() => {
@@ -139,7 +137,7 @@ export function AgentRunOutputViewer({
   }, [messages, hasUserScrolled, isFullscreen]);
 
   const loadOutput = async (skipCache = false) => {
-    if (!run?.id) return;
+    if (!run?.id) {return;}
 
     console.log('[AgentRunOutputViewer] Loading output for run:', {
       runId: run.id,
@@ -262,11 +260,11 @@ export function AgentRunOutputViewer({
 
   // Set up live event listeners for running sessions
   const setupLiveEventListeners = async () => {
-    if (!run?.id || hasSetupListenersRef.current) return;
+    if (!run?.id || hasSetupListenersRef.current) {return;}
     
     try {
       // Clean up existing listeners
-      unlistenRefs.current.forEach(unlisten => unlisten());
+      unlistenRefs.current.forEach(unlisten => { unlisten(); });
       unlistenRefs.current = [];
 
       // Mark that we've set up listeners
@@ -279,7 +277,7 @@ export function AgentRunOutputViewer({
       }, 100);
 
       // Set up live event listeners with run ID isolation
-      const outputUnlisten = await listen<string>(`agent-output:${run!.id}`, (event) => {
+      const outputUnlisten = await listen<string>(`agent-output:${run.id}`, (event) => {
         try {
           // Skip messages during initial load phase
           if (isInitialLoadRef.current) {
@@ -298,17 +296,17 @@ export function AgentRunOutputViewer({
         }
       });
 
-      const errorUnlisten = await listen<string>(`agent-error:${run!.id}`, (event) => {
+      const errorUnlisten = await listen<string>(`agent-error:${run.id}`, (event) => {
         console.error("[AgentRunOutputViewer] Agent error:", event.payload);
         setToast({ message: event.payload, type: 'error' });
       });
 
-      const completeUnlisten = await listen<boolean>(`agent-complete:${run!.id}`, () => {
+      const completeUnlisten = await listen<boolean>(`agent-complete:${run.id}`, () => {
         setToast({ message: 'Agent execution completed', type: 'success' });
         // Don't set status here as the parent component should handle it
       });
 
-      const cancelUnlisten = await listen<boolean>(`agent-cancelled:${run!.id}`, () => {
+      const cancelUnlisten = await listen<boolean>(`agent-cancelled:${run.id}`, () => {
         setToast({ message: 'Agent execution was cancelled', type: 'error' });
       });
 
@@ -327,14 +325,14 @@ export function AgentRunOutputViewer({
   };
 
   const handleCopyAsMarkdown = async () => {
-    if (!run) return;
+    if (!run) {return;}
     let markdown = `# Agent Execution: ${run.agent_name}\n\n`;
     markdown += `**Task:** ${run.task}\n`;
     markdown += `**Model:** ${run.model === 'opus' ? 'Claude 4 Opus' : 'Claude 4 Sonnet'}\n`;
     markdown += `**Date:** ${formatISOTimestamp(run.created_at)}\n`;
-    if (run.metrics?.duration_ms) markdown += `**Duration:** ${(run.metrics.duration_ms / 1000).toFixed(2)}s\n`;
-    if (run.metrics?.total_tokens) markdown += `**Total Tokens:** ${run.metrics.total_tokens}\n`;
-    if (run.metrics?.cost_usd) markdown += `**Cost:** $${run.metrics.cost_usd.toFixed(4)} USD\n`;
+    if (run.metrics?.duration_ms) {markdown += `**Duration:** ${(run.metrics.duration_ms / 1000).toFixed(2)}s\n`;}
+    if (run.metrics?.total_tokens) {markdown += `**Total Tokens:** ${run.metrics.total_tokens}\n`;}
+    if (run.metrics?.cost_usd) {markdown += `**Cost:** $${run.metrics.cost_usd.toFixed(4)} USD\n`;}
     markdown += `\n---\n\n`;
 
     for (const msg of messages) {
@@ -342,8 +340,8 @@ export function AgentRunOutputViewer({
         markdown += `## System Initialization\n\n`;
         markdown += `- Session ID: \`${msg.session_id || 'N/A'}\`\n`;
         markdown += `- Model: \`${msg.model || 'default'}\`\n`;
-        if (msg.cwd) markdown += `- Working Directory: \`${msg.cwd}\`\n`;
-        if (msg.tools?.length) markdown += `- Tools: ${msg.tools.join(', ')}\n`;
+        if (msg.cwd) {markdown += `- Working Directory: \`${msg.cwd}\`\n`;}
+        if (msg.tools?.length) {markdown += `- Tools: ${msg.tools.join(', ')}\n`;}
         markdown += `\n`;
       } else if (msg.type === "assistant" && msg.message) {
         markdown += `## Assistant\n\n`;
@@ -405,7 +403,7 @@ export function AgentRunOutputViewer({
         setToast({ message: 'Agent execution stopped', type: 'success' });
         
         // Clean up listeners
-        unlistenRefs.current.forEach(unlisten => unlisten());
+        unlistenRefs.current.forEach(unlisten => { unlisten(); });
         unlistenRefs.current = [];
         hasSetupListenersRef.current = false;
         
@@ -450,10 +448,10 @@ export function AgentRunOutputViewer({
 
   // Load output on mount
   useEffect(() => {
-    if (!run?.id) return;
+    if (!run?.id) {return;}
     
     // Check cache immediately for instant display
-    const cached = getCachedOutput(run!.id);
+    const cached = getCachedOutput(run.id);
     if (cached) {
       const cachedJsonlLines = cached.output.split('\n').filter(line => line.trim());
       setRawJsonlOutput(cachedJsonlLines);
@@ -464,15 +462,14 @@ export function AgentRunOutputViewer({
     loadOutput();
   }, [run?.id]);
 
-  const displayableMessages = useMemo(() => {
-    return messages.filter((message) => {
-      if (message.isMeta && !message.leafUuid && !message.summary) return false;
+  const displayableMessages = useMemo(() => messages.filter((message) => {
+      if (message.isMeta && !message.leafUuid && !message.summary) {return false;}
 
       if (message.type === "user" && message.message) {
-        if (message.isMeta) return false;
+        if (message.isMeta) {return false;}
 
         const msg = message.message;
-        if (!msg.content || (Array.isArray(msg.content) && msg.content.length === 0)) return false;
+        if (!msg.content || (Array.isArray(msg.content) && msg.content.length === 0)) {return false;}
 
         if (Array.isArray(msg.content)) {
           let hasVisibleContent = false;
@@ -501,29 +498,28 @@ export function AgentRunOutputViewer({
               if (!willBeSkipped) { hasVisibleContent = true; break; }
             }
           }
-          if (!hasVisibleContent) return false;
+          if (!hasVisibleContent) {return false;}
         }
       }
       return true;
-    });
-  }, [messages]);
+    }), [messages]);
 
   const renderIcon = (iconName: string) => {
-    const Icon = AGENT_ICONS[iconName as keyof typeof AGENT_ICONS] || Bot;
+    const Icon = AGENT_ICONS[iconName] || Bot;
     return <Icon className="h-5 w-5" />;
   };
 
   const formatDuration = (ms?: number) => {
-    if (!ms) return "N/A";
+    if (!ms) {return "N/A";}
     const seconds = Math.floor(ms / 1000);
-    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 60) {return `${seconds}s`;}
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
   };
 
   const formatTokens = (tokens?: number) => {
-    if (!tokens) return "0";
+    if (!tokens) {return "0";}
     if (tokens >= 1000) {
       return `${(tokens / 1000).toFixed(1)}k`;
     }
@@ -534,7 +530,7 @@ export function AgentRunOutputViewer({
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Loading agent run...</p>
         </div>
       </div>
@@ -556,7 +552,7 @@ export function AgentRunOutputViewer({
                     {run.agent_name}
                     {run.status === 'running' && (
                       <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                         <span className="text-xs text-green-600 font-medium">Running</span>
                       </div>
                     )}
@@ -630,7 +626,7 @@ export function AgentRunOutputViewer({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  onClick={() => { setIsFullscreen(!isFullscreen); }}
                   title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                   className="h-8 px-2"
                 >
@@ -771,7 +767,7 @@ export function AgentRunOutputViewer({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsFullscreen(false)}
+                onClick={() => { setIsFullscreen(false); }}
               >
                 <Minimize2 className="h-4 w-4 mr-2" />
                 Exit Fullscreen
@@ -818,7 +814,7 @@ export function AgentRunOutputViewer({
           <Toast
             message={toast.message}
             type={toast.type}
-            onDismiss={() => setToast(null)}
+            onDismiss={() => { setToast(null); }}
           />
         )}
       </ToastContainer>

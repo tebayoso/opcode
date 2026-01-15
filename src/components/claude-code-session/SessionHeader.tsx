@@ -50,8 +50,7 @@ export const SessionHeader: React.FC<SessionHeaderProps> = React.memo(({
   onProjectSettings,
   onSlashCommandsSettings,
   setCopyPopoverOpen
-}) => {
-  return (
+}) => (
     <motion.div 
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -171,5 +170,4 @@ export const SessionHeader: React.FC<SessionHeaderProps> = React.memo(({
         </div>
       </div>
     </motion.div>
-  );
-});
+  ));

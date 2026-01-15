@@ -93,7 +93,7 @@ export const CheckpointSettings: React.FC<CheckpointSettingsProps> = ({
       );
       
       setSuccessMessage("Settings saved successfully");
-      setTimeout(() => setSuccessMessage(null), 3000);
+      setTimeout(() => { setSuccessMessage(null); }, 3000);
     } catch (err) {
       console.error("Failed to save checkpoint settings:", err);
       setError("Failed to save checkpoint settings");
@@ -116,7 +116,7 @@ export const CheckpointSettings: React.FC<CheckpointSettingsProps> = ({
       );
       
       setSuccessMessage(`Removed ${removed} old checkpoints`);
-      setTimeout(() => setSuccessMessage(null), 3000);
+      setTimeout(() => { setSuccessMessage(null); }, 3000);
       
       // Reload settings to get updated count
       await loadSettings();
@@ -210,7 +210,7 @@ export const CheckpointSettings: React.FC<CheckpointSettingsProps> = ({
           <Label htmlFor="strategy" className="text-label">Checkpoint Strategy</Label>
           <SelectComponent
             value={checkpointStrategy}
-            onValueChange={(value: string) => setCheckpointStrategy(value as CheckpointStrategy)}
+            onValueChange={(value: string) => { setCheckpointStrategy(value as CheckpointStrategy); }}
             options={strategyOptions}
             disabled={isLoading || !autoCheckpointEnabled}
           />
@@ -272,7 +272,7 @@ export const CheckpointSettings: React.FC<CheckpointSettingsProps> = ({
               min="1"
               max="100"
               value={keepCount}
-              onChange={(e) => setKeepCount(parseInt(e.target.value) || 10)}
+              onChange={(e) => { setKeepCount(parseInt(e.target.value) || 10); }}
               disabled={isLoading}
               className="flex-1 h-9"
             />

@@ -209,7 +209,7 @@ export const ProjectSettings: React.FC<ProjectSettingsProps> = ({
           <Toast
             message={toast.message}
             type={toast.type}
-            onDismiss={() => setToast(null)}
+            onDismiss={() => { setToast(null); }}
           />
         )}
       </ToastContainer>

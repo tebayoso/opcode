@@ -52,7 +52,7 @@ export class SessionPersistenceService {
   static loadSession(sessionId: string): SessionRestoreData | null {
     try {
       const data = localStorage.getItem(`${STORAGE_KEY_PREFIX}${sessionId}`);
-      if (!data) return null;
+      if (!data) {return null;}
 
       const sessionData = JSON.parse(data) as SessionRestoreData;
       
@@ -148,7 +148,7 @@ export class SessionPersistenceService {
     try {
       // First check if we have the session metadata
       const sessionData = this.loadSession(sessionId);
-      if (!sessionData) return false;
+      if (!sessionData) {return false;}
 
       // Try to verify the session exists on disk by loading its history
       const history = await api.loadSessionHistory(sessionId, projectId);

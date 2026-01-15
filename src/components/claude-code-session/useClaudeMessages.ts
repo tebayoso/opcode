@@ -26,7 +26,7 @@ export function useClaudeMessages(options: UseClaudeMessagesOptions = {}) {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   
   const eventListenerRef = useRef<(() => void) | null>(null);
-  const accumulatedContentRef = useRef<{ [key: string]: string }>({});
+  const accumulatedContentRef = useRef<Record<string, string>>({});
 
   const handleMessage = useCallback((message: ClaudeStreamMessage) => {
     console.log('[TRACE] useClaudeMessages.handleMessage called with:', message);

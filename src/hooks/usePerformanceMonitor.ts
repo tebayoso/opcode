@@ -29,7 +29,7 @@ export function usePerformanceMonitor(
     lastRenderTime.current = currentTime;
     
     // Skip first render (mount)
-    if (renderCount.current === 1) return;
+    if (renderCount.current === 1) {return;}
     
     // Check render performance
     if (thresholds.renderTime && renderTime > thresholds.renderTime) {
@@ -58,8 +58,7 @@ export function usePerformanceMonitor(
   });
   
   // Track component unmount metrics
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       const lifetime = performance.now() - mountTime.current;
       
       // Only track if component lived for more than 5 seconds and had many renders
@@ -77,8 +76,7 @@ export function usePerformanceMonitor(
           analytics.track(event.event, event.properties);
         }
       }
-    };
-  }, [componentName]);
+    }, [componentName]);
 }
 
 /**
@@ -91,8 +89,8 @@ export function useAsyncPerformanceTracker(operationName: string) {
     operationStart.current = performance.now();
   };
   
-  const endTracking = (success: boolean = true, dataSize?: number) => {
-    if (!operationStart.current) return;
+  const endTracking = (success = true, dataSize?: number) => {
+    if (!operationStart.current) {return;}
     
     const duration = performance.now() - operationStart.current;
     operationStart.current = null;

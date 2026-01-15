@@ -194,8 +194,7 @@ const SimpleSelect: React.FC<SelectProps> = ({
   placeholder = "Select an option",
   disabled = false,
   className,
-}) => {
-  return (
+}) => (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
       <SelectTrigger className={className}>
         <SelectValue placeholder={placeholder} />
@@ -209,7 +208,6 @@ const SimpleSelect: React.FC<SelectProps> = ({
       </SelectContent>
     </Select>
   );
-};
 
 export {
   Select,

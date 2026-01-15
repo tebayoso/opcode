@@ -155,7 +155,7 @@ export const AnalyticsConsentBanner: React.FC<AnalyticsConsentBannerProps> = ({
   
   useEffect(() => {
     const checkConsent = async () => {
-      if (hasChecked) return;
+      if (hasChecked) {return;}
       
       await analytics.initialize();
       const settings = analytics.getSettings();
@@ -168,7 +168,7 @@ export const AnalyticsConsentBanner: React.FC<AnalyticsConsentBannerProps> = ({
     
     // Delay banner appearance for better UX
     const timer = setTimeout(checkConsent, 2000);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); };
   }, [hasChecked]);
   
   const handleAccept = async () => {
@@ -221,7 +221,7 @@ export const AnalyticsConsentBanner: React.FC<AnalyticsConsentBannerProps> = ({
                 </div>
               </div>
               <button
-                onClick={() => setVisible(false)}
+                onClick={() => { setVisible(false); }}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X className="h-4 w-4" />

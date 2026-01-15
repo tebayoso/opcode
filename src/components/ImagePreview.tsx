@@ -66,7 +66,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
     return convertFileSrc(imagePath);
   };
 
-  if (displayImages.length === 0) return null;
+  if (displayImages.length === 0) {return null;}
 
   return (
     <>
@@ -80,12 +80,12 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
               className="relative flex-shrink-0 group"
-              onMouseEnter={() => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
+              onMouseEnter={() => { setHoveredIndex(index); }}
+              onMouseLeave={() => { setHoveredIndex(null); }}
             >
               <div
                 className="relative w-16 h-16 rounded-md overflow-hidden border border-border cursor-pointer hover:border-primary transition-colors"
-                onClick={() => setSelectedImageIndex(index)}
+                onClick={() => { setSelectedImageIndex(index); }}
               >
                 {imageErrors.has(index) ? (
                   <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -96,7 +96,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
                     src={getImageSrc(imagePath)}
                     alt={`Preview ${index + 1}`}
                     className="w-full h-full object-cover"
-                    onError={() => handleImageError(index)}
+                    onError={() => { handleImageError(index); }}
                   />
                 )}
                 
@@ -114,7 +114,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90 transition-colors"
-                    onClick={(e) => handleRemove(e, index)}
+                    onClick={(e) => { handleRemove(e, index); }}
                   >
                     <X className="h-3 w-3" />
                   </motion.button>
@@ -144,7 +144,7 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
                 src={getImageSrc(displayImages[selectedImageIndex])}
                 alt={`Full preview ${selectedImageIndex + 1}`}
                 className="max-w-full max-h-full object-contain"
-                onError={() => handleImageError(selectedImageIndex)}
+                onError={() => { handleImageError(selectedImageIndex); }}
               />
               
               {/* Navigation buttons if multiple images */}
@@ -152,17 +152,17 @@ export const ImagePreview: React.FC<ImagePreviewProps> = ({
                 <>
                   <button
                     className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
-                    onClick={() => setSelectedImageIndex((prev) => 
+                    onClick={() => { setSelectedImageIndex((prev) => 
                       prev !== null ? (prev - 1 + displayImages.length) % displayImages.length : 0
-                    )}
+                    ); }}
                   >
                     ←
                   </button>
                   <button
                     className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
-                    onClick={() => setSelectedImageIndex((prev) => 
+                    onClick={() => { setSelectedImageIndex((prev) => 
                       prev !== null ? (prev + 1) % displayImages.length : 0
-                    )}
+                    ); }}
                   >
                     →
                   </button>

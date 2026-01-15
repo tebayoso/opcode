@@ -75,11 +75,9 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
   };
 
   // Clean up listeners on unmount
-  useEffect(() => {
-    return () => {
-      unlistenRefs.current.forEach(unlisten => unlisten());
-    };
-  }, []);
+  useEffect(() => () => {
+      unlistenRefs.current.forEach(unlisten => { unlisten(); });
+    }, []);
 
   // Auto-scroll when messages change
   useEffect(() => {
@@ -91,7 +89,7 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
 
 
   const loadOutput = async (skipCache = false) => {
-    if (!session.id) return;
+    if (!session.id) {return;}
 
     try {
       // Check cache first if not skipping cache
@@ -194,11 +192,11 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
   };
 
   const setupLiveEventListeners = async () => {
-    if (!session.id) return;
+    if (!session.id) {return;}
     
     try {
       // Clean up existing listeners
-      unlistenRefs.current.forEach(unlisten => unlisten());
+      unlistenRefs.current.forEach(unlisten => { unlisten(); });
       unlistenRefs.current = [];
 
       // Set up live event listeners with run ID isolation
@@ -246,8 +244,8 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
   const handleCopyAsMarkdown = async () => {
     let markdown = `# Agent Session: ${session.agent_name}\n\n`;
     markdown += `**Status:** ${session.status}\n`;
-    if (session.task) markdown += `**Task:** ${session.task}\n`;
-    if (session.model) markdown += `**Model:** ${session.model}\n`;
+    if (session.task) {markdown += `**Task:** ${session.task}\n`;}
+    if (session.model) {markdown += `**Model:** ${session.model}\n`;}
     markdown += `**Date:** ${new Date().toISOString()}\n\n`;
     markdown += `---\n\n`;
 
@@ -256,8 +254,8 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
         markdown += `## System Initialization\n\n`;
         markdown += `- Session ID: \`${msg.session_id || 'N/A'}\`\n`;
         markdown += `- Model: \`${msg.model || 'default'}\`\n`;
-        if (msg.cwd) markdown += `- Working Directory: \`${msg.cwd}\`\n`;
-        if (msg.tools?.length) markdown += `- Tools: ${msg.tools.join(', ')}\n`;
+        if (msg.cwd) {markdown += `- Working Directory: \`${msg.cwd}\`\n`;}
+        if (msg.tools?.length) {markdown += `- Tools: ${msg.tools.join(', ')}\n`;}
         markdown += `\n`;
       } else if (msg.type === "assistant" && msg.message) {
         markdown += `## Assistant\n\n`;
@@ -315,7 +313,7 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
 
   // Load output on mount and check cache first
   useEffect(() => {
-    if (!session.id) return;
+    if (!session.id) {return;}
     
     // Check cache immediately for instant display
     const cached = getCachedOutput(session.id);
@@ -329,15 +327,14 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
     loadOutput();
   }, [session.id]);
 
-  const displayableMessages = useMemo(() => {
-    return messages.filter((message, index) => {
-      if (message.isMeta && !message.leafUuid && !message.summary) return false;
+  const displayableMessages = useMemo(() => messages.filter((message, index) => {
+      if (message.isMeta && !message.leafUuid && !message.summary) {return false;}
 
       if (message.type === "user" && message.message) {
-        if (message.isMeta) return false;
+        if (message.isMeta) {return false;}
 
         const msg = message.message;
-        if (!msg.content || (Array.isArray(msg.content) && msg.content.length === 0)) return false;
+        if (!msg.content || (Array.isArray(msg.content) && msg.content.length === 0)) {return false;}
 
         if (Array.isArray(msg.content)) {
           let hasVisibleContent = false;
@@ -364,12 +361,11 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
               if (!willBeSkipped) { hasVisibleContent = true; break; }
             }
           }
-          if (!hasVisibleContent) return false;
+          if (!hasVisibleContent) {return false;}
         }
       }
       return true;
-    });
-  }, [messages]);
+    }), [messages]);
 
   return (
     <>
@@ -393,7 +389,7 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
                     </Badge>
                     {session.status === 'running' && (
                       <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse mr-1"></div>
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse mr-1" />
                         Live
                       </Badge>
                     )}
@@ -409,7 +405,7 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setIsFullscreen(!isFullscreen)}
+                      onClick={() => { setIsFullscreen(!isFullscreen); }}
                       title="Fullscreen"
                     >
                       {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -552,7 +548,7 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
               <h2 className="text-lg font-semibold">{session.agent_name} - Output</h2>
               {session.status === 'running' && (
                 <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                   <span className="text-xs text-green-600 font-medium">Running</span>
                 </div>
               )}
@@ -599,7 +595,7 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsFullscreen(false)}
+                onClick={() => { setIsFullscreen(false); }}
                 className="flex items-center gap-2"
               >
                 <X className="h-4 w-4" />
@@ -636,9 +632,7 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
                       </p>
                     </>
                   ) : (
-                    <>
-                      <p className="text-muted-foreground">No output available</p>
-                    </>
+                    <p className="text-muted-foreground">No output available</p>
                   )}
                 </div>
               ) : (
@@ -671,7 +665,7 @@ export function SessionOutputViewer({ session, onClose, className }: SessionOutp
           <Toast
             message={toast.message}
             type={toast.type}
-            onDismiss={() => setToast(null)}
+            onDismiss={() => { setToast(null); }}
           />
         )}
       </ToastContainer>

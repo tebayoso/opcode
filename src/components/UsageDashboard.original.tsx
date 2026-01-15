@@ -82,18 +82,14 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
     }
   };
 
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (amount: number): string => new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 4
     }).format(amount);
-  };
 
-  const formatNumber = (num: number): string => {
-    return new Intl.NumberFormat('en-US').format(num);
-  };
+  const formatNumber = (num: number): string => new Intl.NumberFormat('en-US').format(num);
 
   const formatTokens = (num: number): string => {
     if (num >= 1_000_000) {
@@ -137,7 +133,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
                     key={range}
                     variant={selectedDateRange === range ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSelectedDateRange(range)}
+                    onClick={() => { setSelectedDateRange(range); }}
                   >
                     {range === "all" ? "All Time" : range === "7d" ? "Last 7 Days" : "Last 30 Days"}
                   </Button>
@@ -450,7 +446,7 @@ export const UsageDashboard: React.FC<UsageDashboardProps> = ({ }) => {
                                     </p>
                                   </div>
                                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                                    <div className="border-4 border-transparent border-t-border"></div>
+                                    <div className="border-4 border-transparent border-t-border" />
                                   </div>
                                 </div>
                                 

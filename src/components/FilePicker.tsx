@@ -52,10 +52,10 @@ interface FilePickerProps {
 
 // File icon mapping based on extension
 const getFileIcon = (entry: FileEntry) => {
-  if (entry.is_directory) return Folder;
+  if (entry.is_directory) {return Folder;}
   
   const ext = entry.extension?.toLowerCase();
-  if (!ext) return File;
+  if (!ext) {return File;}
   
   // Code files
   if (['ts', 'tsx', 'js', 'jsx', 'py', 'rs', 'go', 'java', 'cpp', 'c', 'h'].includes(ext)) {
@@ -77,7 +77,7 @@ const getFileIcon = (entry: FileEntry) => {
 
 // Format file size to human readable
 const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '';
+  if (bytes === 0) {return '';}
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -233,7 +233,7 @@ export const FilePicker: React.FC<FilePickerProps> = ({
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => { window.removeEventListener('keydown', handleKeyDown); };
   }, [entries, searchResults, selectedIndex, searchQuery, canGoBack]);
 
   // Scroll selected item into view
@@ -439,9 +439,9 @@ export const FilePicker: React.FC<FilePickerProps> = ({
                 <button
                   key={entry.path}
                   data-index={index}
-                  onClick={() => handleEntryClick(entry)}
-                  onDoubleClick={() => handleEntryDoubleClick(entry)}
-                  onMouseEnter={() => setSelectedIndex(index)}
+                  onClick={() => { handleEntryClick(entry); }}
+                  onDoubleClick={() => { handleEntryDoubleClick(entry); }}
+                  onMouseEnter={() => { setSelectedIndex(index); }}
                   className={cn(
                     "w-full flex items-center gap-2 px-2 py-1.5 rounded-md",
                     "hover:bg-accent transition-colors",

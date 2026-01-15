@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { eventBuilders, analytics } from '@/lib/analytics';
 
 interface Props {
@@ -24,7 +24,7 @@ export class AnalyticsErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Track UI error to analytics
     const event = eventBuilders.uiError({
       component_name: errorInfo.componentStack?.split('\n')[0] || 'Unknown',
@@ -42,7 +42,7 @@ export class AnalyticsErrorBoundary extends Component<Props, State> {
     this.setState({ hasError: false, error: null });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError && this.state.error) {
       // Use custom fallback if provided
       if (this.props.fallback) {

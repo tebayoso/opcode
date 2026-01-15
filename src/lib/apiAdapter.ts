@@ -156,7 +156,7 @@ export async function apiCall<T>(command: string, params?: any): Promise<T> {
   
   // Map Tauri commands to REST endpoints
   const endpoint = mapCommandToEndpoint(command, params);
-  return await restApiCall<T>(endpoint, params);
+  return restApiCall<T>(endpoint, params);
 }
 
 /**
@@ -422,10 +422,10 @@ export function initializeWebMode() {
         event: {
           listen: (eventName: string, callback: (event: any) => void) => {
             // Listen for custom events that simulate Tauri events
-            const handler = (e: any) => callback({ payload: e.detail });
-            window.addEventListener(`${eventName}`, handler);
+            const handler = (e: any) => { callback({ payload: e.detail }); };
+            window.addEventListener(eventName, handler);
             return Promise.resolve(() => {
-              window.removeEventListener(`${eventName}`, handler);
+              window.removeEventListener(eventName, handler);
             });
           },
           emit: () => Promise.resolve(),

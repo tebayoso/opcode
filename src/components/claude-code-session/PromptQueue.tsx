@@ -22,7 +22,7 @@ export const PromptQueue: React.FC<PromptQueueProps> = React.memo(({
   onRemove,
   className
 }) => {
-  if (queuedPrompts.length === 0) return null;
+  if (queuedPrompts.length === 0) {return null;}
 
   return (
     <motion.div
@@ -70,7 +70,7 @@ export const PromptQueue: React.FC<PromptQueueProps> = React.memo(({
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 flex-shrink-0"
-                  onClick={() => onRemove(queuedPrompt.id)}
+                  onClick={() => { onRemove(queuedPrompt.id); }}
                 >
                   <X className="h-3 w-3" />
                 </Button>

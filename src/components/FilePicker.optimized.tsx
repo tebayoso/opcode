@@ -32,7 +32,7 @@ interface FilePickerProps {
 
 // Memoized file icon selector
 const getFileIcon = (entry: FileEntry) => {
-  if (entry.is_directory) return Folder;
+  if (entry.is_directory) {return Folder;}
   
   const ext = entry.name.split('.').pop()?.toLowerCase();
   switch (ext) {
@@ -67,7 +67,7 @@ const getFileIcon = (entry: FileEntry) => {
 };
 
 const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {return '0 B';}
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -191,7 +191,7 @@ export const FilePicker: React.FC<FilePickerProps> = React.memo(({
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (displayEntries.length === 0) return;
+    if (displayEntries.length === 0) {return;}
 
     switch (e.key) {
       case 'ArrowUp':
@@ -287,7 +287,7 @@ export const FilePicker: React.FC<FilePickerProps> = React.memo(({
             ref={searchInputRef}
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); }}
             placeholder="Search files..."
             className="flex-1 bg-transparent outline-none text-sm"
           />
@@ -363,9 +363,9 @@ export const FilePicker: React.FC<FilePickerProps> = React.memo(({
                   }}
                 >
                   <button
-                    onClick={() => handleEntryClick(entry)}
-                    onDoubleClick={() => handleEntryDoubleClick(entry)}
-                    onMouseEnter={() => setSelectedIndex(virtualRow.index)}
+                    onClick={() => { handleEntryClick(entry); }}
+                    onDoubleClick={() => { handleEntryDoubleClick(entry); }}
+                    onMouseEnter={() => { setSelectedIndex(virtualRow.index); }}
                     className={cn(
                       "w-full flex items-center gap-2 px-2 py-1.5",
                       "hover:bg-accent transition-colors",

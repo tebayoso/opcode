@@ -8,7 +8,7 @@ import type {
   AnalyticsSettings 
 } from './types';
 
-export * from './types';
+export type * from './types';
 export * from './events';
 export { ConsentManager } from './consent';
 export { ResourceMonitor, resourceMonitor } from './resourceMonitor';
@@ -20,7 +20,7 @@ class AnalyticsService {
   private config: AnalyticsConfig;
   private eventQueue: AnalyticsEvent[] = [];
   private flushInterval: NodeJS.Timeout | null = null;
-  private currentScreen: string = 'app_start';
+  private currentScreen = 'app_start';
   
   private constructor() {
     this.consentManager = ConsentManager.getInstance();
@@ -44,7 +44,7 @@ class AnalyticsService {
   }
   
   async initialize(): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized) {return;}
     
     try {
       // Initialize consent manager
@@ -192,7 +192,7 @@ class AnalyticsService {
     
     for (const [key, value] of Object.entries(properties)) {
       // Skip null/undefined values
-      if (value == null) continue;
+      if (value == null) {continue;}
       
       // Apply specific sanitizers based on key
       if (key.includes('path') || key.includes('file')) {
@@ -223,7 +223,7 @@ class AnalyticsService {
   }
   
   private flushEvents(): void {
-    if (this.eventQueue.length === 0) return;
+    if (this.eventQueue.length === 0) {return;}
     
     const events = [...this.eventQueue];
     this.eventQueue = [];
@@ -283,7 +283,7 @@ export default analytics;
  * Performance tracking utility for better insights
  */
 export class PerformanceTracker {
-  private static performanceData: Map<string, number[]> = new Map();
+  private static performanceData = new Map<string, number[]>();
   
   /**
    * Record a performance metric
@@ -327,7 +327,7 @@ export class PerformanceTracker {
    */
   static getStats(operation: string): { p50: number; p95: number; p99: number; count: number } | null {
     const data = this.performanceData.get(operation);
-    if (!data || data.length === 0) return null;
+    if (!data || data.length === 0) {return null;}
     
     const sorted = [...data].sort((a, b) => a - b);
     return {

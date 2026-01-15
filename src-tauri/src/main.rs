@@ -20,7 +20,7 @@ use commands::agents::{
 use commands::claude::{
     cancel_claude_execution, check_auto_checkpoint, check_claude_version, cleanup_old_checkpoints,
     clear_checkpoint_manager, continue_claude_code, create_checkpoint, create_project,
-    execute_claude_code, find_claude_md_files, fork_from_checkpoint, get_checkpoint_diff,
+    execute_claude_code, find_claude_md_files, find_global_config_files, fork_from_checkpoint, get_checkpoint_diff,
     get_checkpoint_settings, get_checkpoint_state_stats, get_claude_session_output,
     get_claude_settings, get_home_directory, get_hooks_config, get_project_sessions,
     get_recently_modified_files, get_session_timeline, get_system_prompt, list_checkpoints,
@@ -196,6 +196,7 @@ fn main() {
             save_system_prompt,
             save_claude_settings,
             find_claude_md_files,
+            find_global_config_files,
             read_claude_md_file,
             save_claude_md_file,
             load_session_history,
@@ -286,9 +287,33 @@ fn main() {
             commands::slash_commands::slash_command_get,
             commands::slash_commands::slash_command_save,
             commands::slash_commands::slash_command_delete,
+            // Skills
+            commands::skills::skills_list,
+            commands::skills::skill_get,
+            commands::skills::skill_save,
+            commands::skills::skill_delete,
+            commands::skills::skill_read_file,
+            commands::skills::skill_save_file,
+            commands::skills::skill_delete_file,
             // Proxy Settings
             get_proxy_settings,
             save_proxy_settings,
+            // Plugins
+            commands::plugins::plugins_list_marketplaces,
+            commands::plugins::plugins_add_marketplace,
+            commands::plugins::plugins_remove_marketplace,
+            commands::plugins::plugins_list_installed,
+            commands::plugins::plugins_get_details,
+            commands::plugins::plugins_install,
+            commands::plugins::plugins_uninstall,
+            commands::plugins::plugins_enable,
+            commands::plugins::plugins_disable,
+            commands::plugins::plugins_fetch_marketplace,
+            commands::plugins::plugins_read_readme,
+            commands::plugins::plugins_read_component,
+            commands::plugins::plugins_save_component,
+            commands::plugins::plugins_create,
+            commands::plugins::plugins_delete,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

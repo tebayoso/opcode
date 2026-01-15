@@ -20,8 +20,7 @@ export interface SwitchProps
  * <Switch checked={isEnabled} onCheckedChange={setIsEnabled} />
  */
 const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
-  ({ className, checked, onCheckedChange, disabled, ...props }, ref) => {
-    return (
+  ({ className, checked, onCheckedChange, disabled, ...props }, ref) => (
       <button
         type="button"
         role="switch"
@@ -56,8 +55,7 @@ const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
           {...props}
         />
       </button>
-    );
-  }
+    )
 );
 
 Switch.displayName = "Switch";

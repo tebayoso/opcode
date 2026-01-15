@@ -4,8 +4,9 @@ import { SessionPersistenceService } from '@/services/sessionPersistence';
 
 export interface Tab {
   id: string;
-  type: 'chat' | 'agent' | 'agents' | 'projects' | 'usage' | 'mcp' | 'settings' | 'claude-md' | 'claude-file' | 'agent-execution' | 'create-agent' | 'import-agent';
+  type: 'chat' | 'agent' | 'agents' | 'projects' | 'usage' | 'mcp' | 'settings' | 'claude-md' | 'claude-file' | 'agent-execution' | 'create-agent' | 'import-agent' | 'memories';
   title: string;
+  memoriesProjectPath?: string; // for memories tab
   sessionId?: string;  // for chat tabs
   sessionData?: any; // for chat tabs - stores full session object
   agentRunId?: string; // for agent tabs
@@ -48,7 +49,7 @@ export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Load tabs from storage on mount
   useEffect(() => {
     const loadTabs = async () => {
-    if (isInitialized.current) return;
+    if (isInitialized.current) {return;}
     isInitialized.current = true;
 
     // Migrate from old format if needed
@@ -101,7 +102,7 @@ export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Save tabs to localStorage with debounce
   useEffect(() => {
     // Don't save if not initialized
-    if (!isInitialized.current) return;
+    if (!isInitialized.current) {return;}
     
     // Clear existing timeout
     if (saveTimeoutRef.current) {
@@ -139,9 +140,7 @@ export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [tabs, activeTabId]);
 
-  const generateTabId = () => {
-    return `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  };
+  const generateTabId = () => `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   const addTab = useCallback((tabData: Omit<Tab, 'id' | 'order' | 'createdAt' | 'updatedAt'>): string => {
     if (tabs.length >= MAX_TABS) {
@@ -214,9 +213,7 @@ export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
-  const getTabById = useCallback((id: string): Tab | undefined => {
-    return tabs.find(tab => tab.id === id);
-  }, [tabs]);
+  const getTabById = useCallback((id: string): Tab | undefined => tabs.find(tab => tab.id === id), [tabs]);
 
   const closeAllTabs = useCallback(() => {
     setTabs([]);
@@ -224,9 +221,7 @@ export const TabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     TabPersistenceService.clearTabs();
   }, []);
 
-  const getTabsByType = useCallback((type: 'chat' | 'agent'): Tab[] => {
-    return tabs.filter(tab => tab.type === type);
-  }, [tabs]);
+  const getTabsByType = useCallback((type: 'chat' | 'agent'): Tab[] => tabs.filter(tab => tab.type === type), [tabs]);
 
   const value: TabContextType = {
     tabs,

@@ -108,13 +108,13 @@ export const AgentRunView: React.FC<AgentRunViewProps> = ({
   };
 
   const handleCopyAsJsonl = async () => {
-    if (!run?.output) return;
+    if (!run?.output) {return;}
     await navigator.clipboard.writeText(run.output);
     setCopyPopoverOpen(false);
   };
 
   const handleCopyAsMarkdown = async () => {
-    if (!run) return;
+    if (!run) {return;}
     
     let markdown = `# Agent Run: ${run.agent_name}\n\n`;
     markdown += `**Task:** ${run.task}\n`;
@@ -132,8 +132,8 @@ export const AgentRunView: React.FC<AgentRunViewProps> = ({
         markdown += `## System Initialization\n\n`;
         markdown += `- Session ID: \`${msg.session_id || 'N/A'}\`\n`;
         markdown += `- Model: \`${msg.model || 'default'}\`\n`;
-        if (msg.cwd) markdown += `- Working Directory: \`${msg.cwd}\`\n`;
-        if (msg.tools?.length) markdown += `- Tools: ${msg.tools.join(', ')}\n`;
+        if (msg.cwd) {markdown += `- Working Directory: \`${msg.cwd}\`\n`;}
+        if (msg.tools?.length) {markdown += `- Tools: ${msg.tools.join(', ')}\n`;}
         markdown += `\n`;
       } else if (msg.type === "assistant" && msg.message) {
         markdown += `## Assistant\n\n`;
@@ -218,14 +218,14 @@ export const AgentRunView: React.FC<AgentRunViewProps> = ({
   };
 
   const renderIcon = (iconName: string) => {
-    const Icon = AGENT_ICONS[iconName as keyof typeof AGENT_ICONS] || Bot;
+    const Icon = AGENT_ICONS[iconName] || Bot;
     return <Icon className="h-5 w-5" />;
   };
 
   if (loading) {
     return (
       <div className={cn("flex items-center justify-center h-full", className)}>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }

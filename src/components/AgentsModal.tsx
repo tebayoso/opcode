@@ -52,13 +52,13 @@ export const AgentsModal: React.FC<AgentsModalProps> = ({ open, onOpenChange }) 
 
   // Refresh running agents periodically
   useEffect(() => {
-    if (!open) return;
+    if (!open) {return;}
     
     const interval = setInterval(() => {
       loadRunningAgents();
     }, 3000); // Refresh every 3 seconds
 
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); };
   }, [open]);
 
   const loadAgents = async () => {
@@ -131,7 +131,7 @@ export const AgentsModal: React.FC<AgentsModalProps> = ({ open, onOpenChange }) 
   };
 
   const confirmDelete = async () => {
-    if (!agentToDelete?.id) return;
+    if (!agentToDelete?.id) {return;}
     try {
       await api.deleteAgent(agentToDelete.id);
       loadAgents(); // Refresh the list
@@ -165,7 +165,7 @@ export const AgentsModal: React.FC<AgentsModalProps> = ({ open, onOpenChange }) 
       });
       
       if (filePath) {
-        const agent = await api.importAgentFromFile(filePath as string);
+        const agent = await api.importAgentFromFile(filePath);
         loadAgents(); // Refresh list
         setToast({ message: `Agent "${agent.name}" imported successfully`, type: "success" });
       }
@@ -364,7 +364,7 @@ export const AgentsModal: React.FC<AgentsModalProps> = ({ open, onOpenChange }) 
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.95 }}
                           className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                          onClick={() => handleOpenAgentRun(run)}
+                          onClick={() => { handleOpenAgentRun(run); }}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -437,7 +437,7 @@ export const AgentsModal: React.FC<AgentsModalProps> = ({ open, onOpenChange }) 
     {/* GitHub Agent Browser */}
     <GitHubAgentBrowser
       isOpen={showGitHubBrowser}
-      onClose={() => setShowGitHubBrowser(false)}
+      onClose={() => { setShowGitHubBrowser(false); }}
       onImportSuccess={() => {
         setShowGitHubBrowser(false);
         loadAgents(); // Refresh the agents list
@@ -450,7 +450,7 @@ export const AgentsModal: React.FC<AgentsModalProps> = ({ open, onOpenChange }) 
       <Toast
         message={toast.message}
         type={toast.type}
-        onDismiss={() => setToast(null)}
+        onDismiss={() => { setToast(null); }}
       />
     )}
     </>

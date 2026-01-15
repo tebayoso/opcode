@@ -22,7 +22,7 @@ import { TooltipProvider, TooltipSimple, Tooltip, TooltipTrigger, TooltipContent
 import { FilePicker } from "./FilePicker";
 import { SlashCommandPicker } from "./SlashCommandPicker";
 import { ImagePreview } from "./ImagePreview";
-import { type FileEntry, type SlashCommand } from "@/lib/api";
+import type { FileEntry, SlashCommand } from "@/lib/api";
 
 // Conditional import for Tauri webview window
 let tauriGetCurrentWebviewWindow: any;
@@ -84,7 +84,7 @@ type ThinkingMode = "auto" | "think" | "think_hard" | "think_harder" | "ultrathi
 /**
  * Thinking mode configuration
  */
-type ThinkingModeConfig = {
+interface ThinkingModeConfig {
   id: ThinkingMode;
   name: string;
   description: string;
@@ -93,7 +93,7 @@ type ThinkingModeConfig = {
   icon: React.ReactNode;
   color: string;
   shortName: string;
-};
+}
 
 const THINKING_MODES: ThinkingModeConfig[] = [
   {
@@ -152,7 +152,7 @@ const THINKING_MODES: ThinkingModeConfig[] = [
  */
 const ThinkingModeIndicator: React.FC<{ level: number; color?: string }> = ({ level, color: _color }) => {
   const getBarColor = (barIndex: number) => {
-    if (barIndex > level) return "bg-muted";
+    if (barIndex > level) {return "bg-muted";}
     return "bg-primary";
   };
   
@@ -172,14 +172,14 @@ const ThinkingModeIndicator: React.FC<{ level: number; color?: string }> = ({ le
   );
 };
 
-type Model = {
+interface Model {
   id: "sonnet" | "opus";
   name: string;
   description: string;
   icon: React.ReactNode;
   shortName: string;
   color: string;
-};
+}
 
 const MODELS: Model[] = [
   {
@@ -257,7 +257,7 @@ const FloatingPromptInputInner = (
 
           // Wrap path in quotes if it contains spaces
           const mention = imagePath.includes(' ') ? `@"${imagePath}"` : `@${imagePath}`;
-          const newPrompt = currentPrompt + (currentPrompt.endsWith(' ') || currentPrompt === '' ? '' : ' ') + mention + ' ';
+          const newPrompt = `${currentPrompt + (currentPrompt.endsWith(' ') || currentPrompt === '' ? '' : ' ') + mention  } `;
 
           // Focus the textarea
           setTimeout(() => {
@@ -315,7 +315,7 @@ const FloatingPromptInputInner = (
     }
     
     // Remove quoted mentions from text to avoid double-matching
-    let textWithoutQuoted = text.replace(quotedRegex, '');
+    const textWithoutQuoted = text.replace(quotedRegex, '');
     
     // Then extract unquoted paths (typically file paths)
     matches = Array.from(textWithoutQuoted.matchAll(unquotedRegex));
@@ -324,7 +324,7 @@ const FloatingPromptInputInner = (
     for (const match of matches) {
       const path = match[1].trim();
       // Skip if it looks like a data URL fragment (shouldn't happen with proper quoting)
-      if (path.includes('data:')) continue;
+      if (path.includes('data:')) {continue;}
       
       console.log('[extractImagePaths] Processing unquoted path:', path);
       
@@ -407,7 +407,7 @@ const FloatingPromptInputInner = (
                   }
                   return `@${p}`;
                 }).join(' ');
-                const newPrompt = currentPrompt + (currentPrompt.endsWith(' ') || currentPrompt === '' ? '' : ' ') + mentionsToAdd + ' ';
+                const newPrompt = `${currentPrompt + (currentPrompt.endsWith(' ') || currentPrompt === '' ? '' : ' ') + mentionsToAdd  } `;
 
                 setTimeout(() => {
                   const target = isExpanded ? expandedTextareaRef.current : textareaRef.current;
@@ -590,7 +590,7 @@ const FloatingPromptInputInner = (
 
   const handleSlashCommandSelect = (command: SlashCommand) => {
     const textarea = isExpanded ? expandedTextareaRef.current : textareaRef.current;
-    if (!textarea) return;
+    if (!textarea) {return;}
 
     // Find the / position before cursor
     let slashPosition = -1;
@@ -702,7 +702,7 @@ const FloatingPromptInputInner = (
 
       // Append thinking phrase if not auto mode
       const thinkingMode = THINKING_MODES.find(m => m.id === selectedThinkingMode);
-      if (thinkingMode && thinkingMode.phrase) {
+      if (thinkingMode?.phrase) {
         finalPrompt = `${finalPrompt}.\n\n${thinkingMode.phrase}.`;
       }
 
@@ -752,7 +752,7 @@ const FloatingPromptInputInner = (
 
   const handlePaste = async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
-    if (!items) return;
+    if (!items) {return;}
 
     for (const item of items) {
       if (item.type.startsWith('image/')) {
@@ -760,7 +760,7 @@ const FloatingPromptInputInner = (
         
         // Get the image blob
         const blob = item.getAsFile();
-        if (!blob) continue;
+        if (!blob) {continue;}
 
         try {
           // Convert blob to base64
@@ -772,7 +772,7 @@ const FloatingPromptInputInner = (
             setPrompt(currentPrompt => {
               // Use the data URL directly as the image reference
               const mention = `@"${base64Data}"`;
-              const newPrompt = currentPrompt + (currentPrompt.endsWith(' ') || currentPrompt === '' ? '' : ' ') + mention + ' ';
+              const newPrompt = `${currentPrompt + (currentPrompt.endsWith(' ') || currentPrompt === '' ? '' : ' ') + mention  } `;
               
               // Focus the textarea and move cursor to end
               setTimeout(() => {
@@ -822,7 +822,7 @@ const FloatingPromptInputInner = (
     
     // For file paths, use the original logic
     const escapedPath = imagePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const escapedRelativePath = imagePath.replace(projectPath + '/', '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedRelativePath = imagePath.replace(`${projectPath  }/`, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     
     // Create patterns for both quoted and unquoted mentions
     const patterns = [
@@ -857,7 +857,7 @@ const FloatingPromptInputInner = (
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
-            onClick={() => setIsExpanded(false)}
+            onClick={() => { setIsExpanded(false); }}
           >
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -865,7 +865,7 @@ const FloatingPromptInputInner = (
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.15 }}
               className="bg-background border border-border rounded-lg shadow-lg w-full max-w-2xl p-4 space-y-4"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); }}
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium">Compose your prompt</h3>
@@ -877,7 +877,7 @@ const FloatingPromptInputInner = (
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setIsExpanded(false)}
+                      onClick={() => { setIsExpanded(false); }}
                       className="h-8 w-8"
                     >
                       <Minimize2 className="h-4 w-4" />
@@ -920,7 +920,7 @@ const FloatingPromptInputInner = (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setModelPickerOpen(!modelPickerOpen)}
+                          onClick={() => { setModelPickerOpen(!modelPickerOpen); }}
                           className="gap-2"
                         >
                           <span className={selectedModelData.color}>
@@ -975,7 +975,7 @@ const FloatingPromptInputInner = (
                             <Button
                               variant="outline"
                                 size="sm"
-                                onClick={() => setThinkingModePickerOpen(!thinkingModePickerOpen)}
+                                onClick={() => { setThinkingModePickerOpen(!thinkingModePickerOpen); }}
                                 className="gap-2"
                               >
                                 <span className={THINKING_MODES.find(m => m.id === selectedThinkingMode)?.color}>
@@ -1254,7 +1254,7 @@ const FloatingPromptInputInner = (
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setIsExpanded(true)}
+                        onClick={() => { setIsExpanded(true); }}
                         disabled={disabled}
                         className="h-8 w-8 hover:bg-accent/50 transition-colors"
                       >
@@ -1290,7 +1290,7 @@ const FloatingPromptInputInner = (
 
                 {/* File Picker */}
                 <AnimatePresence>
-                  {showFilePicker && projectPath && projectPath.trim() && (
+                  {showFilePicker && projectPath?.trim() && (
                     <FilePicker
                       basePath={projectPath.trim()}
                       onSelect={handleFileSelect}

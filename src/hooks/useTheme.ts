@@ -19,6 +19,4 @@ import { useThemeContext } from '../contexts/ThemeContext';
  * // Update custom colors
  * await setCustomColors({ background: 'oklch(0.98 0.01 240)' });
  */
-export const useTheme = () => {
-  return useThemeContext();
-};
+export const useTheme = () => useThemeContext();

@@ -1,4 +1,4 @@
-import { ThemeMode } from '@/contexts/ThemeContext';
+import type { ThemeMode } from '@/contexts/ThemeContext';
 
 /**
  * Claude-themed syntax highlighting theme factory

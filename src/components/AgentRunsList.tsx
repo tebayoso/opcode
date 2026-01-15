@@ -56,21 +56,21 @@ export const AgentRunsList: React.FC<AgentRunsListProps> = ({
   }, [runs.length]);
   
   const renderIcon = (iconName: string) => {
-    const Icon = AGENT_ICONS[iconName as keyof typeof AGENT_ICONS] || Bot;
+    const Icon = AGENT_ICONS[iconName] || Bot;
     return <Icon className="h-4 w-4" />;
   };
   
   const formatDuration = (ms?: number) => {
-    if (!ms) return "N/A";
+    if (!ms) {return "N/A";}
     const seconds = Math.floor(ms / 1000);
-    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 60) {return `${seconds}s`;}
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
   };
   
   const formatTokens = (tokens?: number) => {
-    if (!tokens) return "0";
+    if (!tokens) {return "0";}
     if (tokens >= 1000) {
       return `${(tokens / 1000).toFixed(1)}k`;
     }
@@ -97,8 +97,7 @@ export const AgentRunsList: React.FC<AgentRunsListProps> = ({
   }
 
   return (
-    <>
-      <div className={cn("space-y-2", className)}>
+    <div className={cn("space-y-2", className)}>
         <AnimatePresence mode="popLayout">
           {currentRuns.map((run, index) => (
             <motion.div
@@ -117,7 +116,7 @@ export const AgentRunsList: React.FC<AgentRunsListProps> = ({
                   "cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] active:scale-[0.99]",
                   run.status === "running" && "border-green-500/50"
                 )}
-                onClick={() => handleRunClick(run)}
+                onClick={() => { handleRunClick(run); }}
               >
                 <CardContent className="p-3">
                   <div className="flex items-center gap-3">
@@ -132,7 +131,7 @@ export const AgentRunsList: React.FC<AgentRunsListProps> = ({
                         </h4>
                         {run.status === "running" && (
                           <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                             <span className="text-xs text-green-600 font-medium">Running</span>
                           </div>
                         )}
@@ -195,7 +194,5 @@ export const AgentRunsList: React.FC<AgentRunsListProps> = ({
           </div>
         )}
       </div>
-
-    </>
   );
 }; 

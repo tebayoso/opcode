@@ -43,7 +43,7 @@ export const MessageList: React.FC<MessageListProps> = React.memo(({
 
   // Handle scroll events to detect user scrolling
   const handleScroll = () => {
-    if (!scrollContainerRef.current) return;
+    if (!scrollContainerRef.current) {return;}
     
     const scrollElement = scrollContainerRef.current;
     const isAtBottom = 

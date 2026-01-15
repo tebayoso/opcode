@@ -92,7 +92,7 @@ export const Topbar: React.FC<TopbarProps> = ({
       );
     }
     
-    if (!versionStatus) return null;
+    if (!versionStatus) {return null;}
     
     const statusContent = (
       <Button
@@ -172,7 +172,7 @@ export const Topbar: React.FC<TopbarProps> = ({
       <StatusIndicator />
       
       {/* Spacer - Navigation moved to titlebar */}
-      <div></div>
+      <div />
     </motion.div>
   );
 }; 

@@ -52,16 +52,16 @@ export class TabPersistenceService {
    */
   static saveTabs(tabs: Tab[], activeTabId: string | null): void {
     // Don't save if persistence is disabled
-    if (!this.isEnabled()) return;
+    if (!this.isEnabled()) {return;}
     
     try {
       // Filter out tabs that shouldn't be persisted
       const persistableTabs = tabs.filter(tab => {
         // Don't persist tabs with running status (they're likely stale)
-        if (tab.status === 'running') return false;
+        if (tab.status === 'running') {return false;}
         
         // Don't persist create/import agent tabs (they're temporary)
-        if (tab.type === 'create-agent' || tab.type === 'import-agent') return false;
+        if (tab.type === 'create-agent' || tab.type === 'import-agent') {return false;}
         
         return true;
       });
@@ -127,7 +127,7 @@ export class TabPersistenceService {
       // Validate and filter out any invalid tabs
       const validTabs = tabs.filter(tab => {
         // Basic validation
-        if (!tab.id || !tab.type || !tab.title) return false;
+        if (!tab.id || !tab.type || !tab.title) {return false;}
         
         // Type-specific validation
         switch (tab.type) {

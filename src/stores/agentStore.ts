@@ -179,7 +179,7 @@ const agentStore: StateCreator<
     },
     
     // Clear error
-    clearError: () => set({ error: null }),
+    clearError: () => { set({ error: null }); },
     
     // Handle real-time agent run updates
     handleAgentRunUpdate: (run: AgentRunWithMetrics) => {

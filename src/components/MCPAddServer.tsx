@@ -117,12 +117,12 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
       const args = stdioArgs.trim() ? stdioArgs.split(/\s+/) : [];
       
       // Convert env vars to object
-      const env = stdioEnvVars.reduce((acc, { key, value }) => {
+      const env = stdioEnvVars.reduce<Record<string, string>>((acc, { key, value }) => {
         if (key.trim() && value.trim()) {
           acc[key] = value;
         }
         return acc;
-      }, {} as Record<string, string>);
+      }, {});
       
       const result = await api.mcpAdd(
         stdioName,
@@ -177,12 +177,12 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
       setSaving(true);
       
       // Convert env vars to object
-      const env = sseEnvVars.reduce((acc, { key, value }) => {
+      const env = sseEnvVars.reduce<Record<string, string>>((acc, { key, value }) => {
         if (key.trim() && value.trim()) {
           acc[key] = value;
         }
         return acc;
-      }, {} as Record<string, string>);
+      }, {});
       
       const result = await api.mcpAdd(
         sseName,
@@ -221,15 +221,14 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
   /**
    * Renders environment variable inputs
    */
-  const renderEnvVars = (type: "stdio" | "sse", envVars: EnvironmentVariable[]) => {
-    return (
+  const renderEnvVars = (type: "stdio" | "sse", envVars: EnvironmentVariable[]) => (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-sm font-medium">Environment Variables</Label>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => addEnvVar(type)}
+            onClick={() => { addEnvVar(type); }}
             className="gap-2"
           >
             <Plus className="h-3 w-3" />
@@ -244,20 +243,20 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
                 <Input
                   placeholder="KEY"
                   value={envVar.key}
-                  onChange={(e) => updateEnvVar(type, envVar.id, "key", e.target.value)}
+                  onChange={(e) => { updateEnvVar(type, envVar.id, "key", e.target.value); }}
                   className="flex-1 font-mono text-sm"
                 />
                 <span className="text-muted-foreground">=</span>
                 <Input
                   placeholder="value"
                   value={envVar.value}
-                  onChange={(e) => updateEnvVar(type, envVar.id, "value", e.target.value)}
+                  onChange={(e) => { updateEnvVar(type, envVar.id, "value", e.target.value); }}
                   className="flex-1 font-mono text-sm"
                 />
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => removeEnvVar(type, envVar.id)}
+                  onClick={() => { removeEnvVar(type, envVar.id); }}
                   className="h-8 w-8 hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -268,7 +267,6 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
         )}
       </div>
     );
-  };
 
   return (
     <div className="p-6 space-y-6">
@@ -279,7 +277,7 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
         </p>
       </div>
 
-      <Tabs value={transport} onValueChange={(v) => setTransport(v as "stdio" | "sse")}>
+      <Tabs value={transport} onValueChange={(v) => { setTransport(v as "stdio" | "sse"); }}>
         <TabsList className="grid w-full grid-cols-2 max-w-sm mb-6">
           <TabsTrigger value="stdio" className="gap-2">
             <Terminal className="h-4 w-4 text-amber-500" />
@@ -301,7 +299,7 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
                   id="stdio-name"
                   placeholder="my-server"
                   value={stdioName}
-                  onChange={(e) => setStdioName(e.target.value)}
+                  onChange={(e) => { setStdioName(e.target.value); }}
                 />
                 <p className="text-xs text-muted-foreground">
                   A unique name to identify this server
@@ -314,7 +312,7 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
                   id="stdio-command"
                   placeholder="/path/to/server"
                   value={stdioCommand}
-                  onChange={(e) => setStdioCommand(e.target.value)}
+                  onChange={(e) => { setStdioCommand(e.target.value); }}
                   className="font-mono"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -328,7 +326,7 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
                   id="stdio-args"
                   placeholder="arg1 arg2 arg3"
                   value={stdioArgs}
-                  onChange={(e) => setStdioArgs(e.target.value)}
+                  onChange={(e) => { setStdioArgs(e.target.value); }}
                   className="font-mono"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -340,7 +338,7 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
                 <Label htmlFor="stdio-scope">Scope</Label>
                 <SelectComponent
                   value={stdioScope}
-                  onValueChange={(value: string) => setStdioScope(value)}
+                  onValueChange={(value: string) => { setStdioScope(value); }}
                   options={[
                     { value: "local", label: "Local (this project only)" },
                     { value: "project", label: "Project (shared via .mcp.json)" },
@@ -384,7 +382,7 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
                   id="sse-name"
                   placeholder="sse-server"
                   value={sseName}
-                  onChange={(e) => setSseName(e.target.value)}
+                  onChange={(e) => { setSseName(e.target.value); }}
                 />
                 <p className="text-xs text-muted-foreground">
                   A unique name to identify this server
@@ -397,7 +395,7 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
                   id="sse-url"
                   placeholder="https://example.com/sse-endpoint"
                   value={sseUrl}
-                  onChange={(e) => setSseUrl(e.target.value)}
+                  onChange={(e) => { setSseUrl(e.target.value); }}
                   className="font-mono"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -409,7 +407,7 @@ export const MCPAddServer: React.FC<MCPAddServerProps> = ({
                 <Label htmlFor="sse-scope">Scope</Label>
                 <SelectComponent
                   value={sseScope}
-                  onValueChange={(value: string) => setSseScope(value)}
+                  onValueChange={(value: string) => { setSseScope(value); }}
                   options={[
                     { value: "local", label: "Local (this project only)" },
                     { value: "project", label: "Project (shared via .mcp.json)" },

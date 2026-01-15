@@ -45,7 +45,7 @@ const getProjectName = (path: string): string => {
  * Formats path to be more readable - shows full path relative to home
  * Truncates long paths with ellipsis in the middle
  */
-const getDisplayPath = (path: string, maxLength: number = 30): string => {
+const getDisplayPath = (path: string, maxLength = 30): string => {
   // Try to make path home-relative
   let displayPath = path;
   const homeIndicators = ['/Users/', '/home/'];
@@ -176,7 +176,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 className="group"
               >
                 <motion.button
-                  onClick={() => onProjectClick(project)}
+                  onClick={() => { onProjectClick(project); }}
                   whileTap={{ scale: 0.97 }}
                   transition={{ duration: 0.15 }}
                   className="w-full text-left px-3 py-2 rounded-md hover:bg-accent/50 transition-colors flex items-center justify-between"
@@ -202,7 +202,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  onClick={() => { setCurrentPage(prev => Math.max(1, prev - 1)); }}
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -215,7 +215,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                     key={page}
                     variant={currentPage === page ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => setCurrentPage(page)}
+                    onClick={() => { setCurrentPage(page); }}
                     className="w-8 h-8 p-0"
                   >
                     {page}
@@ -230,7 +230,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  onClick={() => { setCurrentPage(prev => Math.min(totalPages, prev + 1)); }}
                   disabled={currentPage === totalPages}
                 >
                   <ChevronRight className="h-4 w-4" />

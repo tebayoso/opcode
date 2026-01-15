@@ -106,7 +106,7 @@ export function ProxySettings({ setToast, onChange }: ProxySettingsProps) {
           <Switch
             id="proxy-enabled"
             checked={settings.enabled}
-            onCheckedChange={(checked) => setSettings(prev => ({ ...prev, enabled: checked }))}
+            onCheckedChange={(checked) => { setSettings(prev => ({ ...prev, enabled: checked })); }}
           />
         </div>
 
@@ -117,7 +117,7 @@ export function ProxySettings({ setToast, onChange }: ProxySettingsProps) {
               id="http-proxy"
               placeholder="http://proxy.example.com:8080"
               value={settings.http_proxy || ''}
-              onChange={(e) => handleInputChange('http_proxy', e.target.value)}
+              onChange={(e) => { handleInputChange('http_proxy', e.target.value); }}
               disabled={!settings.enabled}
             />
           </div>
@@ -128,7 +128,7 @@ export function ProxySettings({ setToast, onChange }: ProxySettingsProps) {
               id="https-proxy"
               placeholder="http://proxy.example.com:8080"
               value={settings.https_proxy || ''}
-              onChange={(e) => handleInputChange('https_proxy', e.target.value)}
+              onChange={(e) => { handleInputChange('https_proxy', e.target.value); }}
               disabled={!settings.enabled}
             />
           </div>
@@ -139,7 +139,7 @@ export function ProxySettings({ setToast, onChange }: ProxySettingsProps) {
               id="no-proxy"
               placeholder="localhost,127.0.0.1,.example.com"
               value={settings.no_proxy || ''}
-              onChange={(e) => handleInputChange('no_proxy', e.target.value)}
+              onChange={(e) => { handleInputChange('no_proxy', e.target.value); }}
               disabled={!settings.enabled}
             />
             <p className="text-xs text-muted-foreground">
@@ -153,7 +153,7 @@ export function ProxySettings({ setToast, onChange }: ProxySettingsProps) {
               id="all-proxy"
               placeholder="socks5://proxy.example.com:1080"
               value={settings.all_proxy || ''}
-              onChange={(e) => handleInputChange('all_proxy', e.target.value)}
+              onChange={(e) => { handleInputChange('all_proxy', e.target.value); }}
               disabled={!settings.enabled}
             />
             <p className="text-xs text-muted-foreground">

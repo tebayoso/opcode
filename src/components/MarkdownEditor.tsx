@@ -128,7 +128,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             <div className="h-full rounded-lg border border-border overflow-hidden shadow-sm" data-color-mode="dark">
               <MDEditor
                 value={content}
-                onChange={(val) => setContent(val || "")}
+                onChange={(val) => { setContent(val || ""); }}
                 preview="edit"
                 height="100%"
                 visibleDragbar={false}
@@ -144,7 +144,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
           <Toast
             message={toast.message}
             type={toast.type}
-            onDismiss={() => setToast(null)}
+            onDismiss={() => { setToast(null); }}
           />
         )}
       </ToastContainer>

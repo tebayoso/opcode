@@ -40,12 +40,12 @@ export function detectLinks(text: string): DetectedLink[] {
     const url = match[0];
     
     // Skip if we've already seen this URL
-    if (seenUrls.has(url)) continue;
+    if (seenUrls.has(url)) {continue;}
     seenUrls.add(url);
     
     // Ensure the URL has a protocol
     let fullUrl = url;
-    if (!url.match(/^https?:\/\//)) {
+    if (!(/^https?:\/\//.exec(url))) {
       // Default to http for localhost, https for others
       const isLocalhost = LOCALHOST_REGEX.test(url);
       fullUrl = `${isLocalhost ? 'http' : 'https'}://${url}`;

@@ -29,7 +29,7 @@ export function useCheckpoints({ sessionId, projectId, projectPath, onToast }: U
   }, [onToast]);
 
   const loadCheckpoints = useCallback(async () => {
-    if (!sessionId) return;
+    if (!sessionId) {return;}
     
     setIsLoadingCheckpoints(true);
     try {
@@ -53,7 +53,7 @@ export function useCheckpoints({ sessionId, projectId, projectPath, onToast }: U
   }, [sessionId, projectId, projectPath, showToast]);
 
   const createCheckpoint = useCallback(async (name: string) => {
-    if (!sessionId) return;
+    if (!sessionId) {return;}
     
     try {
       await api.createCheckpoint(sessionId, projectId, projectPath, undefined, name);
@@ -67,7 +67,7 @@ export function useCheckpoints({ sessionId, projectId, projectPath, onToast }: U
   }, [sessionId, projectId, projectPath, loadCheckpoints, showToast]);
 
   const restoreCheckpoint = useCallback(async (checkpointId: string) => {
-    if (!sessionId) return;
+    if (!sessionId) {return;}
     
     try {
       await api.restoreCheckpoint(checkpointId, sessionId, projectId, projectPath);
@@ -82,7 +82,7 @@ export function useCheckpoints({ sessionId, projectId, projectPath, onToast }: U
   }, [sessionId, projectId, projectPath, showToast]);
 
   const deleteCheckpoint = useCallback(async (_checkpointId: string) => {
-    if (!sessionId) return;
+    if (!sessionId) {return;}
     
     try {
       // API doesn't have deleteCheckpoint, using a placeholder
@@ -96,7 +96,7 @@ export function useCheckpoints({ sessionId, projectId, projectPath, onToast }: U
   }, [sessionId, loadCheckpoints, showToast]);
 
   const forkCheckpoint = useCallback(async (checkpointId: string, newSessionName: string) => {
-    if (!sessionId) return null;
+    if (!sessionId) {return null;}
     
     try {
       const forkedSession = await api.forkFromCheckpoint(checkpointId, sessionId, projectId, projectPath, newSessionName, 'Forked from checkpoint');

@@ -74,7 +74,7 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
 
   // Handle mouse move
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || !containerRef.current) return;
+    if (!isDragging || !containerRef.current) {return;}
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -116,11 +116,12 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
+    return undefined;
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {return;}
 
     const step = e.shiftKey ? 10 : 2; // Larger steps with shift
     const containerWidth = containerRef.current.offsetWidth;

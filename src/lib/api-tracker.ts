@@ -22,7 +22,7 @@ function wrapApiMethod<T extends (...args: any[]) => Promise<any>>(
   return (async (...args: any[]) => {
     const startTime = performance.now();
     const startMemory = ('memory' in performance ? (performance as any).memory?.usedJSHeapSize : 0) || 0;
-    let retryCount = 0;
+    const retryCount = 0;
     
     const trackPerformance = (success: boolean, error?: any) => {
       const duration = performance.now() - startTime;

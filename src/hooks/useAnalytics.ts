@@ -379,7 +379,7 @@ export function useAppLifecycle() {
     };
     
     window.addEventListener('beforeunload', handleUnload);
-    return () => window.removeEventListener('beforeunload', handleUnload);
+    return () => { window.removeEventListener('beforeunload', handleUnload); };
   }, []);
 }
 
@@ -392,8 +392,7 @@ export function useComponentMetrics(componentName: string) {
     renderCount.current += 1;
   });
   
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       // Track component unmount metrics
       const lifetime = Date.now() - mountTime.current;
       analytics.track('component_metrics', {
@@ -401,8 +400,7 @@ export function useComponentMetrics(componentName: string) {
         lifetime_ms: lifetime,
         render_count: renderCount.current,
       });
-    };
-  }, [componentName]);
+    }, [componentName]);
 }
 
 // Hook for tracking user interactions
@@ -542,8 +540,8 @@ export function useWorkflowTracking(workflowType: string) {
     interruptions.current += 1;
   }, []);
   
-  const completeWorkflow = useCallback((totalSteps: number, success: boolean = true) => {
-    if (!startTime.current) return;
+  const completeWorkflow = useCallback((totalSteps: number, success = true) => {
+    if (!startTime.current) {return;}
     
     const duration = Date.now() - startTime.current;
     const completionRate = stepsCompleted.current / totalSteps;
@@ -602,7 +600,7 @@ export function useAIInteractionTracking(model: string) {
     responseTokens: number,
     qualityScore?: number
   ) => {
-    if (!interactionStart.current) return;
+    if (!interactionStart.current) {return;}
     
     trackEvent.aiInteraction({
       model,
@@ -635,7 +633,7 @@ export function useNetworkPerformanceTracking() {
     latency: number,
     payloadSize: number,
     success: boolean,
-    retryCount: number = 0
+    retryCount = 0
   ) => {
     const connectionQuality: 'excellent' | 'good' | 'poor' = 
       latency < 100 ? 'excellent' :

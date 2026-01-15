@@ -60,12 +60,12 @@ export const MCPServerList: React.FC<MCPServerListProps> = ({
   const trackEvent = useTrackEvent();
 
   // Group servers by scope
-  const serversByScope = servers.reduce((acc, server) => {
+  const serversByScope = servers.reduce<Record<string, MCPServer[]>>((acc, server) => {
     const scope = server.scope || "local";
-    if (!acc[scope]) acc[scope] = [];
+    if (!acc[scope]) {acc[scope] = [];}
     acc[scope].push(server);
     return acc;
-  }, {} as Record<string, MCPServer[]>);
+  }, {});
 
   /**
    * Toggles expanded state for a server
@@ -89,7 +89,7 @@ export const MCPServerList: React.FC<MCPServerListProps> = ({
     try {
       await navigator.clipboard.writeText(command);
       setCopiedServer(serverName);
-      setTimeout(() => setCopiedServer(null), 2000);
+      setTimeout(() => { setCopiedServer(null); }, 2000);
     } catch (error) {
       console.error("Failed to copy command:", error);
     }
@@ -233,7 +233,7 @@ export const MCPServerList: React.FC<MCPServerListProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => toggleExpanded(server.name)}
+                    onClick={() => { toggleExpanded(server.name); }}
                     className="h-6 px-2 text-xs hover:bg-primary/10"
                   >
                     <ChevronDown className="h-3 w-3 mr-1" />
@@ -313,7 +313,7 @@ export const MCPServerList: React.FC<MCPServerListProps> = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => toggleExpanded(server.name)}
+                        onClick={() => { toggleExpanded(server.name); }}
                         className="h-6 px-2 text-xs hover:bg-primary/10"
                       >
                         <ChevronUp className="h-3 w-3 mr-1" />

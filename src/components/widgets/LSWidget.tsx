@@ -66,12 +66,12 @@ export const LSResultWidget: React.FC<LSResultWidgetProps> = ({ content }) => {
   // Parse the directory tree structure
   const parseDirectoryTree = (rawContent: string) => {
     const lines = rawContent.split('\n');
-    const entries: Array<{
+    const entries: {
       path: string;
       name: string;
       type: 'file' | 'directory';
       level: number;
-    }> = [];
+    }[] = [];
     
     let currentPath: string[] = [];
     
@@ -82,15 +82,15 @@ export const LSResultWidget: React.FC<LSResultWidgetProps> = ({ content }) => {
       }
       
       // Skip empty lines
-      if (!line.trim()) continue;
+      if (!line.trim()) {continue;}
       
       // Calculate indentation level
-      const indent = line.match(/^(\s*)/)?.[1] || '';
+      const indent = (/^(\s*)/.exec(line))?.[1] || '';
       const level = Math.floor(indent.length / 2);
       
       // Extract the entry name
-      const entryMatch = line.match(/^\s*-\s+(.+?)(\/$)?$/);
-      if (!entryMatch) continue;
+      const entryMatch = /^\s*-\s+(.+?)(\/$)?$/.exec(line);
+      if (!entryMatch) {continue;}
       
       const fullName = entryMatch[1];
       const isDirectory = line.trim().endsWith('/');
@@ -126,27 +126,25 @@ export const LSResultWidget: React.FC<LSResultWidgetProps> = ({ content }) => {
   };
   
   // Group entries by parent for collapsible display
-  const getChildren = (parentPath: string, parentLevel: number) => {
-    return entries.filter(e => {
-      if (e.level !== parentLevel + 1) return false;
+  const getChildren = (parentPath: string, parentLevel: number) => entries.filter(e => {
+      if (e.level !== parentLevel + 1) {return false;}
       const parentParts = parentPath.split('/').filter(Boolean);
       const entryParts = e.path.split('/').filter(Boolean);
       
       // Check if this entry is a direct child of the parent
-      if (entryParts.length !== parentParts.length + 1) return false;
+      if (entryParts.length !== parentParts.length + 1) {return false;}
       
       // Check if all parent parts match
       for (let i = 0; i < parentParts.length; i++) {
-        if (parentParts[i] !== entryParts[i]) return false;
+        if (parentParts[i] !== entryParts[i]) {return false;}
       }
       
       return true;
     });
-  };
   
   const renderEntry = (entry: typeof entries[0], isRoot = false) => {
     const hasChildren = entry.type === 'directory' && 
-      entries.some(e => e.path.startsWith(entry.path + '/') && e.level === entry.level + 1);
+      entries.some(e => e.path.startsWith(`${entry.path  }/`) && e.level === entry.level + 1);
     const isExpanded = expandedDirs.has(entry.path) || isRoot;
     
     const getIcon = () => {

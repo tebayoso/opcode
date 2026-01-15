@@ -61,8 +61,8 @@ export function formatISOTimestamp(isoString: string): string {
  * @returns Truncated text
  */
 export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength - 3) + '...';
+  if (text.length <= maxLength) {return text;}
+  return `${text.slice(0, maxLength - 3)  }...`;
 }
 
 /**

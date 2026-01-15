@@ -182,12 +182,12 @@ export const LSResultWidget: React.FC<{ content: string }> = ({ content }) => {
   // Parse the directory tree structure
   const parseDirectoryTree = (rawContent: string) => {
     const lines = rawContent.split('\n');
-    const entries: Array<{
+    const entries: {
       path: string;
       name: string;
       type: 'file' | 'directory';
       level: number;
-    }> = [];
+    }[] = [];
     
     let currentPath: string[] = [];
     
@@ -198,15 +198,15 @@ export const LSResultWidget: React.FC<{ content: string }> = ({ content }) => {
       }
       
       // Skip empty lines
-      if (!line.trim()) continue;
+      if (!line.trim()) {continue;}
       
       // Calculate indentation level
-      const indent = line.match(/^(\s*)/)?.[1] || '';
+      const indent = (/^(\s*)/.exec(line))?.[1] || '';
       const level = Math.floor(indent.length / 2);
       
       // Extract the entry name
-      const entryMatch = line.match(/^\s*-\s+(.+?)(\/$)?$/);
-      if (!entryMatch) continue;
+      const entryMatch = /^\s*-\s+(.+?)(\/$)?$/.exec(line);
+      if (!entryMatch) {continue;}
       
       const fullName = entryMatch[1];
       const isDirectory = line.trim().endsWith('/');
@@ -242,27 +242,25 @@ export const LSResultWidget: React.FC<{ content: string }> = ({ content }) => {
   };
   
   // Group entries by parent for collapsible display
-  const getChildren = (parentPath: string, parentLevel: number) => {
-    return entries.filter(e => {
-      if (e.level !== parentLevel + 1) return false;
+  const getChildren = (parentPath: string, parentLevel: number) => entries.filter(e => {
+      if (e.level !== parentLevel + 1) {return false;}
       const parentParts = parentPath.split('/').filter(Boolean);
       const entryParts = e.path.split('/').filter(Boolean);
       
       // Check if this entry is a direct child of the parent
-      if (entryParts.length !== parentParts.length + 1) return false;
+      if (entryParts.length !== parentParts.length + 1) {return false;}
       
       // Check if all parent parts match
       for (let i = 0; i < parentParts.length; i++) {
-        if (parentParts[i] !== entryParts[i]) return false;
+        if (parentParts[i] !== entryParts[i]) {return false;}
       }
       
       return true;
     });
-  };
   
   const renderEntry = (entry: typeof entries[0], isRoot = false) => {
     const hasChildren = entry.type === 'directory' && 
-      entries.some(e => e.path.startsWith(entry.path + '/') && e.level === entry.level + 1);
+      entries.some(e => e.path.startsWith(`${entry.path  }/`) && e.level === entry.level + 1);
     const isExpanded = expandedDirs.has(entry.path) || isRoot;
     
     const getIcon = () => {
@@ -406,7 +404,7 @@ export const ReadResultWidget: React.FC<{ content: string; filePath?: string }> 
   
   // Extract file extension for syntax highlighting
   const getLanguage = (path?: string) => {
-    if (!path) return "text";
+    if (!path) {return "text";}
     const ext = path.split('.').pop()?.toLowerCase();
     const languageMap: Record<string, string> = {
       ts: "typescript",
@@ -470,7 +468,7 @@ export const ReadResultWidget: React.FC<{ content: string; filePath?: string }> 
     for (const line of lines) {
       // Remove leading whitespace before parsing
       const trimmedLine = line.trimStart();
-      const match = trimmedLine.match(/^(\d+)→(.*)$/);
+      const match = /^(\d+)→(.*)$/.exec(trimmedLine);
       if (match) {
         const lineNum = parseInt(match[1], 10);
         if (minLineNumber === Infinity) {
@@ -520,7 +518,7 @@ export const ReadResultWidget: React.FC<{ content: string; filePath?: string }> 
         </div>
         {isLargeFile && (
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => { setIsExpanded(!isExpanded); }}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronRight className={cn("h-3 w-3 transition-transform", isExpanded && "rotate-90")} />
@@ -745,18 +743,18 @@ export const WriteWidget: React.FC<{ filePath: string; content: string; result?:
 
   const language = getLanguage(filePath);
   const isLargeContent = content.length > 1000;
-  const displayContent = isLargeContent ? content.substring(0, 1000) + "\n..." : content;
+  const displayContent = isLargeContent ? `${content.substring(0, 1000)  }\n...` : content;
 
   // Maximized view as a modal
   const MaximizedView = () => {
-    if (!isMaximized) return null;
+    if (!isMaximized) {return null;}
     
     return createPortal(
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         {/* Backdrop with blur */}
         <div 
           className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          onClick={() => setIsMaximized(false)}
+          onClick={() => { setIsMaximized(false); }}
         />
         
         {/* Modal content */}
@@ -771,7 +769,7 @@ export const WriteWidget: React.FC<{ filePath: string; content: string; result?:
               variant="ghost" 
               size="icon" 
               className="h-8 w-8"
-              onClick={() => setIsMaximized(false)}
+              onClick={() => { setIsMaximized(false); }}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -822,7 +820,7 @@ export const WriteWidget: React.FC<{ filePath: string; content: string; result?:
               variant="ghost" 
               size="icon" 
               className="h-6 w-6"
-              onClick={() => setIsMaximized(true)}
+              onClick={() => { setIsMaximized(true); }}
             >
               <Maximize2 className="h-3 w-3" />
             </Button>
@@ -858,7 +856,7 @@ export const WriteWidget: React.FC<{ filePath: string; content: string; result?:
           {filePath}
         </code>
       </div>
-      <CodePreview codeContent={displayContent} truncated={true} />
+      <CodePreview codeContent={displayContent} truncated />
       <MaximizedView />
     </div>
   );
@@ -900,15 +898,15 @@ export const GrepWidget: React.FC<{
   // Parse grep results to extract file paths and matches
   const parseGrepResults = (content: string) => {
     const lines = content.split('\n').filter(line => line.trim());
-    const results: Array<{
+    const results: {
       file: string;
       lineNumber: number;
       content: string;
-    }> = [];
+    }[] = [];
     
     lines.forEach(line => {
       // Common grep output format: filename:lineNumber:content
-      const match = line.match(/^(.+?):(\d+):(.*)$/);
+      const match = /^(.+?):(\d+):(.*)$/.exec(line);
       if (match) {
         results.push({
           file: match[1],
@@ -1007,7 +1005,7 @@ export const GrepWidget: React.FC<{
           ) : grepResults.length > 0 ? (
             <>
               <button
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={() => { setIsExpanded(!isExpanded); }}
                 className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {isExpanded ? (
@@ -1215,13 +1213,13 @@ export const EditResultWidget: React.FC<{ content: string }> = ({ content }) => 
   for (const rawLine of lines) {
     const line = rawLine.replace(/\r$/, '');
     if (line.includes('The file') && line.includes('has been updated')) {
-      const match = line.match(/The file (.+) has been updated/);
+      const match = /The file (.+) has been updated/.exec(line);
       if (match) {
         filePath = match[1];
       }
     } else if (/^\s*\d+/.test(line)) {
       inCodeBlock = true;
-      const lineMatch = line.match(/^\s*(\d+)\t?(.*)$/);
+      const lineMatch = /^\s*(\d+)\t?(.*)$/.exec(line);
       if (lineMatch) {
         const [, lineNum, codePart] = lineMatch;
         codeLines.push({
@@ -1302,33 +1300,29 @@ export const MCPWidget: React.FC<{
   const method = parts[2] || '';
   
   // Format namespace for display (handle kebab-case and snake_case)
-  const formatNamespace = (ns: string) => {
-    return ns
+  const formatNamespace = (ns: string) => ns
       .replace(/-/g, ' ')
       .replace(/_/g, ' ')
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
-  };
   
   // Format method name
-  const formatMethod = (m: string) => {
-    return m
+  const formatMethod = (m: string) => m
       .replace(/_/g, ' ')
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
-  };
   
   const hasInput = input && Object.keys(input).length > 0;
   const inputString = hasInput ? JSON.stringify(input, null, 2) : '';
   const isLargeInput = inputString.length > 200;
   
   // Count tokens approximation (very rough estimate)
-  const estimateTokens = (str: string) => {
+  const estimateTokens = (str: string) => 
     // Rough approximation: ~4 characters per token
-    return Math.ceil(str.length / 4);
-  };
+     Math.ceil(str.length / 4)
+  ;
   
   const inputTokens = hasInput ? estimateTokens(inputString) : 0;
 
@@ -1354,7 +1348,7 @@ export const MCPWidget: React.FC<{
               </Badge>
               {isLargeInput && (
                 <button
-                  onClick={() => setIsExpanded(!isExpanded)}
+                  onClick={() => { setIsExpanded(!isExpanded); }}
                   className="text-violet-500 hover:text-violet-600 transition-colors"
                 >
                   {isExpanded ? (
@@ -1433,7 +1427,7 @@ export const MCPWidget: React.FC<{
             {!isExpanded && isLargeInput && (
               <div className="text-center mt-2">
                 <button
-                  onClick={() => setIsExpanded(true)}
+                  onClick={() => { setIsExpanded(true); }}
                   className="text-xs text-violet-500 hover:text-violet-600 transition-colors inline-flex items-center gap-1"
                 >
                   <ChevronDown className="h-3 w-3" />
@@ -1462,8 +1456,7 @@ export const CommandWidget: React.FC<{
   commandName: string;
   commandMessage: string;
   commandArgs?: string;
-}> = ({ commandName, commandMessage, commandArgs }) => {
-  return (
+}> = ({ commandName, commandMessage, commandArgs }) => (
     <div className="rounded-lg border bg-background/50 overflow-hidden">
       <div className="px-4 py-2 border-b bg-muted/50 flex items-center gap-2">
         <Terminal className="h-3.5 w-3.5 text-blue-500" />
@@ -1483,7 +1476,6 @@ export const CommandWidget: React.FC<{
       </div>
     </div>
   );
-};
 
 /**
  * Widget for command output/stdout
@@ -1517,12 +1509,12 @@ export const CommandOutputWidget: React.FC<{
       } else if (part === '\u001b[22m') {
         isBold = false;
         return;
-      } else if (part.match(/\u001b\[\d+m/)) {
+      } else if (/\u001b\[\d+m/.exec(part)) {
         // Ignore other ANSI codes for now
         return;
       }
       
-      if (!part) return;
+      if (!part) {return;}
       
       // Make links clickable within this part
       const linkElements = makeLinksClickable(part, (url) => {
@@ -1564,8 +1556,7 @@ export const CommandOutputWidget: React.FC<{
 export const SummaryWidget: React.FC<{ 
   summary: string;
   leafUuid?: string;
-}> = ({ summary, leafUuid }) => {
-  return (
+}> = ({ summary, leafUuid }) => (
     <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 overflow-hidden">
       <div className="px-4 py-3 flex items-start gap-3">
         <div className="mt-0.5">
@@ -1585,14 +1576,13 @@ export const SummaryWidget: React.FC<{
       </div>
     </div>
   );
-};
 
 /**
  * Widget for displaying MultiEdit tool usage
  */
 export const MultiEditWidget: React.FC<{
   file_path: string;
-  edits: Array<{ old_string: string; new_string: string }>;
+  edits: { old_string: string; new_string: string }[];
   result?: any;
 }> = ({ file_path, edits, result: _result }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -1614,7 +1604,7 @@ export const MultiEditWidget: React.FC<{
         
         <div className="space-y-1">
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => { setIsExpanded(!isExpanded); }}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronRight className={cn("h-3 w-3 transition-transform", isExpanded && "rotate-90")} />
@@ -1698,7 +1688,7 @@ export const MultiEditWidget: React.FC<{
  */
 export const MultiEditResultWidget: React.FC<{ 
   content: string;
-  edits?: Array<{ old_string: string; new_string: string }>;
+  edits?: { old_string: string; new_string: string }[];
 }> = ({ content, edits }) => {
   // If we have the edits array, show a nice diff view
   if (edits && edits.length > 0) {
@@ -1865,14 +1855,14 @@ export const SystemInitializedWidget: React.FC<{
   };
   
   // Group MCP tools by provider
-  const mcpToolsByProvider = mcpTools.reduce((acc, tool) => {
+  const mcpToolsByProvider = mcpTools.reduce<Record<string, string[]>>((acc, tool) => {
     const { provider } = formatMcpToolName(tool);
     if (!acc[provider]) {
       acc[provider] = [];
     }
     acc[provider].push(tool);
     return acc;
-  }, {} as Record<string, string[]>);
+  }, {});
   
   return (
     <Card className="border-blue-500/20 bg-blue-500/5">
@@ -1946,7 +1936,7 @@ export const SystemInitializedWidget: React.FC<{
             {mcpTools.length > 0 && (
               <div className="space-y-2">
                 <button
-                  onClick={() => setMcpExpanded(!mcpExpanded)}
+                  onClick={() => { setMcpExpanded(!mcpExpanded); }}
                   className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Package className="h-3.5 w-3.5" />
@@ -2034,7 +2024,7 @@ export const TaskWidget: React.FC<{
         {prompt && (
           <div className="space-y-2">
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => { setIsExpanded(!isExpanded); }}
               className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               <ChevronRight className={cn("h-3 w-3 transition-transform", isExpanded && "rotate-90")} />
@@ -2066,10 +2056,10 @@ export const WebSearchWidget: React.FC<{
   
   // Parse the result to extract all links sections and build a structured representation
   const parseSearchResult = (resultContent: string) => {
-    const sections: Array<{
+    const sections: {
       type: 'text' | 'links';
-      content: string | Array<{ title: string; url: string }>;
-    }> = [];
+      content: string | { title: string; url: string }[];
+    }[] = [];
     
     // Split by "Links: [" to find all link sections
     const parts = resultContent.split(/Links:\s*\[/);
@@ -2084,9 +2074,9 @@ export const WebSearchWidget: React.FC<{
       try {
         // Find the closing bracket
         const closingIndex = part.indexOf(']');
-        if (closingIndex === -1) return;
+        if (closingIndex === -1) {return;}
         
-        const linksJson = '[' + part.substring(0, closingIndex + 1);
+        const linksJson = `[${  part.substring(0, closingIndex + 1)}`;
         const remainingText = part.substring(closingIndex + 1).trim();
         
         // Parse the JSON array
@@ -2099,7 +2089,7 @@ export const WebSearchWidget: React.FC<{
         }
       } catch (e) {
         // If parsing fails, treat it as text
-        sections.push({ type: 'text', content: 'Links: [' + part });
+        sections.push({ type: 'text', content: `Links: [${  part}` });
       }
     });
     
@@ -2117,11 +2107,11 @@ export const WebSearchWidget: React.FC<{
   };
   
   // Extract result content if available
-  let searchResults: {
-    sections: Array<{
+  const searchResults: {
+    sections: {
       type: 'text' | 'links';
-      content: string | Array<{ title: string; url: string }>;
-    }>;
+      content: string | { title: string; url: string }[];
+    }[];
     noResults: boolean;
   } = { sections: [], noResults: false };
   
@@ -2169,9 +2159,9 @@ export const WebSearchWidget: React.FC<{
           {!searchResults.sections.length ? (
             <div className="px-3 py-2 flex items-center gap-2 text-muted-foreground">
               <div className="animate-pulse flex items-center gap-1">
-                <div className="h-1 w-1 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="h-1 w-1 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="h-1 w-1 bg-blue-500 rounded-full animate-bounce"></div>
+                <div className="h-1 w-1 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                <div className="h-1 w-1 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                <div className="h-1 w-1 bg-blue-500 rounded-full animate-bounce" />
               </div>
               <span className="text-sm">Searching...</span>
             </div>
@@ -2199,7 +2189,7 @@ export const WebSearchWidget: React.FC<{
                     <div key={idx} className="space-y-1.5">
                       {/* Toggle Button */}
                       <button
-                        onClick={() => toggleSection(idx)}
+                        onClick={() => { toggleSection(idx); }}
                         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {isExpanded ? (
@@ -2283,7 +2273,7 @@ export const ThinkingWidget: React.FC<{
   return (
     <div className="rounded-lg border border-gray-500/20 bg-gray-500/5 overflow-hidden">
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => { setIsExpanded(!isExpanded); }}
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-500/10 transition-colors"
       >
         <div className="flex items-center gap-2">
@@ -2325,7 +2315,7 @@ export const WebFetchWidget: React.FC<{
   
   // Extract result content if available
   let fetchedContent = '';
-  let isLoading = !result;
+  const isLoading = !result;
   let hasError = false;
   
   if (result) {
@@ -2353,7 +2343,7 @@ export const WebFetchWidget: React.FC<{
   const maxPreviewLength = 500;
   const isTruncated = fetchedContent.length > maxPreviewLength;
   const previewContent = isTruncated && !showFullContent
-    ? fetchedContent.substring(0, maxPreviewLength) + '...'
+    ? `${fetchedContent.substring(0, maxPreviewLength)  }...`
     : fetchedContent;
   
   // Extract domain from URL for display
@@ -2394,7 +2384,7 @@ export const WebFetchWidget: React.FC<{
         {prompt && (
           <div className="ml-6 space-y-1">
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => { setIsExpanded(!isExpanded); }}
               className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               <ChevronRight className={cn("h-3 w-3 transition-transform", isExpanded && "rotate-90")} />
@@ -2418,9 +2408,9 @@ export const WebFetchWidget: React.FC<{
         <div className="rounded-lg border bg-background/50 backdrop-blur-sm overflow-hidden">
           <div className="px-3 py-2 flex items-center gap-2 text-muted-foreground">
             <div className="animate-pulse flex items-center gap-1">
-              <div className="h-1 w-1 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-              <div className="h-1 w-1 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-              <div className="h-1 w-1 bg-purple-500 rounded-full animate-bounce"></div>
+              <div className="h-1 w-1 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+              <div className="h-1 w-1 bg-purple-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+              <div className="h-1 w-1 bg-purple-500 rounded-full animate-bounce" />
             </div>
             <span className="text-sm">Fetching content from {getDomain(url)}...</span>
           </div>
@@ -2447,7 +2437,7 @@ export const WebFetchWidget: React.FC<{
                 </div>
                 {isTruncated && (
                   <button
-                    onClick={() => setShowFullContent(!showFullContent)}
+                    onClick={() => { setShowFullContent(!showFullContent); }}
                     className="text-xs text-purple-500 hover:text-purple-600 transition-colors flex items-center gap-1"
                   >
                     {showFullContent ? (
@@ -2508,8 +2498,8 @@ export const TodoReadWidget: React.FC<{ todos?: any[]; result?: any }> = ({ todo
     } else if (typeof result.content === 'string') {
       try {
         const parsed = JSON.parse(result.content);
-        if (Array.isArray(parsed)) todos = parsed;
-        else if (parsed.todos) todos = parsed.todos;
+        if (Array.isArray(parsed)) {todos = parsed;}
+        else if (parsed.todos) {todos = parsed.todos;}
       } catch (e) {
         // Not JSON, ignore
       }
@@ -2557,7 +2547,7 @@ export const TodoReadWidget: React.FC<{ todos?: any[]; result?: any }> = ({ todo
   const filteredTodos = todos.filter(todo => {
     const matchesSearch = !searchQuery || 
       todo.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (todo.id && todo.id.toLowerCase().includes(searchQuery.toLowerCase()));
+      (todo.id?.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesStatus = statusFilter === "all" || todo.status === statusFilter;
     
@@ -2600,7 +2590,7 @@ export const TodoReadWidget: React.FC<{ todos?: any[]; result?: any }> = ({ todo
   // Export todos as JSON
   const exportAsJson = () => {
     const dataStr = JSON.stringify(todos, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const dataUri = `data:application/json;charset=utf-8,${ encodeURIComponent(dataStr)}`;
     const exportFileDefaultName = 'todos.json';
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
@@ -2629,7 +2619,7 @@ export const TodoReadWidget: React.FC<{ todos?: any[]; result?: any }> = ({ todo
       }
     });
     
-    const dataUri = 'data:text/markdown;charset=utf-8,'+ encodeURIComponent(markdown);
+    const dataUri = `data:text/markdown;charset=utf-8,${ encodeURIComponent(markdown)}`;
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', 'todos.md');
@@ -2827,7 +2817,7 @@ export const TodoReadWidget: React.FC<{ todos?: any[]; result?: any }> = ({ todo
     const rendered = new Set<string>();
     
     const renderTodoWithDependents = (todo: any, level = 0) => {
-      if (rendered.has(todo.id)) return null;
+      if (rendered.has(todo.id)) {return null;}
       rendered.add(todo.id);
       
       const dependents = todos.filter(t => 
@@ -2914,7 +2904,7 @@ export const TodoReadWidget: React.FC<{ todos?: any[]; result?: any }> = ({ todo
             type="text"
             placeholder="Search todos..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); }}
             className="pl-9 h-9"
           />
         </div>
@@ -2927,7 +2917,7 @@ export const TodoReadWidget: React.FC<{ todos?: any[]; result?: any }> = ({ todo
                 size="sm"
                 variant={statusFilter === status ? "default" : "ghost"}
                 className="h-7 px-2 text-xs"
-                onClick={() => setStatusFilter(status)}
+                onClick={() => { setStatusFilter(status); }}
               >
                 {status === "all" ? "All" : statusConfig[status as keyof typeof statusConfig]?.label}
                 {status === "all" && (
@@ -2942,7 +2932,7 @@ export const TodoReadWidget: React.FC<{ todos?: any[]; result?: any }> = ({ todo
       </div>
 
       {/* View Mode Tabs */}
-      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
+      <Tabs value={viewMode} onValueChange={(v) => { setViewMode(v as typeof viewMode); }}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="list" className="text-xs">
             <LayoutList className="h-4 w-4 mr-1" />

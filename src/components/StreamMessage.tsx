@@ -79,7 +79,7 @@ const StreamMessageComponent: React.FC<StreamMessageProps> = ({ message, classNa
   
   // Helper to get tool result for a specific tool call ID
   const getToolResult = (toolId: string | undefined): any => {
-    if (!toolId) return null;
+    if (!toolId) {return null;}
     return toolResults.get(toolId) || null;
   };
   
@@ -311,14 +311,14 @@ const StreamMessageComponent: React.FC<StreamMessageProps> = ({ message, classNa
         </Card>
       );
       
-      if (!renderedSomething) return null;
+      if (!renderedSomething) {return null;}
       return renderedCard;
     }
 
     // User message - handle both nested and direct content structures
     if (message.type === "user") {
       // Don't render meta messages, which are for system use
-      if (message.isMeta) return null;
+      if (message.isMeta) {return null;}
 
       // Handle different message structures
       const msg = message.message || message;
@@ -335,11 +335,11 @@ const StreamMessageComponent: React.FC<StreamMessageProps> = ({ message, classNa
                 {(typeof msg.content === 'string' || (msg.content && !Array.isArray(msg.content))) && (
                   (() => {
                     const contentStr = typeof msg.content === 'string' ? msg.content : String(msg.content);
-                    if (contentStr.trim() === '') return null;
+                    if (contentStr.trim() === '') {return null;}
                     renderedSomething = true;
                     
                     // Check if it's a command message
-                    const commandMatch = contentStr.match(/<command-name>(.+?)<\/command-name>[\s\S]*?<command-message>(.+?)<\/command-message>[\s\S]*?<command-args>(.*?)<\/command-args>/);
+                    const commandMatch = /<command-name>(.+?)<\/command-name>[\s\S]*?<command-message>(.+?)<\/command-message>[\s\S]*?<command-args>(.*?)<\/command-args>/.exec(contentStr);
                     if (commandMatch) {
                       const [, commandName, commandMessage, commandArgs] = commandMatch;
                       return (
@@ -352,7 +352,7 @@ const StreamMessageComponent: React.FC<StreamMessageProps> = ({ message, classNa
                     }
                     
                     // Check if it's command output
-                    const stdoutMatch = contentStr.match(/<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/);
+                    const stdoutMatch = /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/.exec(contentStr);
                     if (stdoutMatch) {
                       const [, output] = stdoutMatch;
                       return <CommandOutputWidget output={output} onLinkDetected={onLinkDetected} />;
@@ -413,7 +413,7 @@ const StreamMessageComponent: React.FC<StreamMessageProps> = ({ message, classNa
                     }
                     
                     // Always show system reminders regardless of widget status
-                    const reminderMatch = contentText.match(/<system-reminder>(.*?)<\/system-reminder>/s);
+                    const reminderMatch = /<system-reminder>(.*?)<\/system-reminder>/s.exec(contentText);
                     if (reminderMatch) {
                       const reminderMessage = reminderMatch[1].trim();
                       const beforeReminder = contentText.substring(0, reminderMatch.index || 0).trim();
@@ -486,7 +486,7 @@ const StreamMessageComponent: React.FC<StreamMessageProps> = ({ message, classNa
                     
                     // Check if this is an LS tool result (directory tree structure)
                     const isLSResult = (() => {
-                      if (!content.tool_use_id || typeof contentText !== 'string') return false;
+                      if (!content.tool_use_id || typeof contentText !== 'string') {return false;}
                       
                       // Check if this result came from an LS tool by looking for the tool call
                       let isFromLSTool = false;
@@ -511,7 +511,7 @@ const StreamMessageComponent: React.FC<StreamMessageProps> = ({ message, classNa
                       }
                       
                       // Only proceed if this is from an LS tool
-                      if (!isFromLSTool) return false;
+                      if (!isFromLSTool) {return false;}
                       
                       // Additional validation: check for tree structure pattern
                       const lines = contentText.split('\n');
@@ -631,7 +631,7 @@ const StreamMessageComponent: React.FC<StreamMessageProps> = ({ message, classNa
           </CardContent>
         </Card>
       );
-      if (!renderedSomething) return null;
+      if (!renderedSomething) {return null;}
       return renderedCard;
     }
 

@@ -58,7 +58,7 @@ export const ExecutionControlBar: React.FC<ExecutionControlBarProps> = ({
         >
           {/* Rotating symbol indicator */}
           <div className="relative flex items-center justify-center">
-            <div className="rotating-symbol text-primary"></div>
+            <div className="rotating-symbol text-primary" />
           </div>
 
           {/* Status text */}

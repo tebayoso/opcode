@@ -653,9 +653,7 @@ export const sanitizers = {
   },
   
   // Remove project names and paths
-  sanitizeProjectPath: (_path: string): string => {
-    return 'project';
-  },
+  sanitizeProjectPath: (_path: string): string => 'project',
   
   // Sanitize error messages that might contain sensitive info
   sanitizeErrorMessage: (message: string): string => {
@@ -669,32 +667,32 @@ export const sanitizers = {
   },
   
   // Sanitize agent names that might contain user info
-  sanitizeAgentName: (name: string): string => {
+  sanitizeAgentName: (name: string): string => 
     // Only keep the type, remove custom names
-    return name.split('-')[0] || 'custom';
-  },
+     name.split('-')[0] || 'custom'
+  ,
   
   // Sanitize tool names to remove any user-specific info
-  sanitizeToolName: (name: string): string => {
+  sanitizeToolName: (name: string): string => 
     // Remove any path-like structures
-    return name.replace(/\/[\w\-\/\.]+/g, '').toLowerCase();
-  },
+     name.replace(/\/[\w\-\/\.]+/g, '').toLowerCase()
+  ,
   
   // Sanitize server names to remove any user-specific info
-  sanitizeServerName: (name: string): string => {
+  sanitizeServerName: (name: string): string => 
     // Keep only the type or first part
-    return name.split(/[\-_]/)[0] || 'custom';
-  },
+     name.split(/[\-_]/)[0] || 'custom'
+  ,
   
   // Sanitize command names
-  sanitizeCommandName: (name: string): string => {
+  sanitizeCommandName: (name: string): string => 
     // Remove any custom prefixes or user-specific parts
-    return name.replace(/^custom-/, '').split('-')[0] || 'custom';
-  },
+     name.replace(/^custom-/, '').split('-')[0] || 'custom'
+  ,
   
   // Sanitize API endpoints
-  sanitizeEndpoint: (endpoint: string): string => {
+  sanitizeEndpoint: (endpoint: string): string => 
     // Remove any dynamic IDs or user-specific parts
-    return endpoint.replace(/\/\d+/g, '/:id').replace(/\/[\w\-]{20,}/g, '/:id');
-  },
+     endpoint.replace(/\/\d+/g, '/:id').replace(/\/[\w\-]{20,}/g, '/:id')
+  ,
 };

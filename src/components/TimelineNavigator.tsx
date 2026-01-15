@@ -244,7 +244,7 @@ export const TimelineNavigator: React.FC<TimelineNavigatorProps> = ({
     setExpandedNodes(newExpanded);
   };
 
-  const renderTimelineNode = (node: TimelineNode, depth: number = 0) => {
+  const renderTimelineNode = (node: TimelineNode, depth = 0) => {
     const isExpanded = expandedNodes.has(node.checkpoint.id);
     const hasChildren = node.children.length > 0;
     const isCurrent = timeline?.currentCheckpointId === node.checkpoint.id;
@@ -280,7 +280,7 @@ export const TimelineNavigator: React.FC<TimelineNavigatorProps> = ({
               variant="ghost"
               size="icon"
               className="h-6 w-6 -ml-1"
-              onClick={() => toggleNodeExpansion(node.checkpoint.id)}
+              onClick={() => { toggleNodeExpansion(node.checkpoint.id); }}
             >
               {isExpanded ? (
                 <ChevronDown className="h-3 w-3" />
@@ -298,7 +298,7 @@ export const TimelineNavigator: React.FC<TimelineNavigatorProps> = ({
               isSelected && "border-blue-500 bg-blue-500/5",
               !hasChildren && "ml-5"
             )}
-            onClick={() => setSelectedCheckpoint(node.checkpoint)}
+            onClick={() => { setSelectedCheckpoint(node.checkpoint); }}
           >
             <CardContent className="p-3">
               <div className="flex items-start justify-between gap-2">
@@ -449,7 +449,7 @@ export const TimelineNavigator: React.FC<TimelineNavigatorProps> = ({
         <Button
           size="sm"
           variant="default"
-          onClick={() => setShowCreateDialog(true)}
+          onClick={() => { setShowCreateDialog(true); }}
           disabled={isLoading}
         >
           <Save className="h-3 w-3 mr-1" />
@@ -493,7 +493,7 @@ export const TimelineNavigator: React.FC<TimelineNavigatorProps> = ({
                 id="description"
                 placeholder="e.g., Before major refactoring"
                 value={checkpointDescription}
-                onChange={(e) => setCheckpointDescription(e.target.value)}
+                onChange={(e) => { setCheckpointDescription(e.target.value); }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !isLoading) {
                     if (e.nativeEvent.isComposing || isIMEComposingRef.current) {
@@ -511,7 +511,7 @@ export const TimelineNavigator: React.FC<TimelineNavigatorProps> = ({
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setShowCreateDialog(false)}
+              onClick={() => { setShowCreateDialog(false); }}
               disabled={isLoading}
             >
               Cancel

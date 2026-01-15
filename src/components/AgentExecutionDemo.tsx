@@ -162,7 +162,7 @@ body {
 
 /* ... many more lines of CSS ... */
 /* This content is over 1000 characters so it should show the maximize button */
-` + '\n'.repeat(100) + '/* End of very long CSS file */'
+${  '\n'.repeat(100)  }/* End of very long CSS file */`
           }
         }]
       }

@@ -51,9 +51,10 @@ export const Toast: React.FC<ToastProps> = ({
       const timer = setTimeout(() => {
         onDismiss?.();
       }, duration);
-      
-      return () => clearTimeout(timer);
+
+      return () => { clearTimeout(timer); };
     }
+    return undefined;
   }, [duration, onDismiss]);
   
   const icons = {
@@ -98,8 +99,7 @@ interface ToastContainerProps {
   children: React.ReactNode;
 }
 
-export const ToastContainer: React.FC<ToastContainerProps> = ({ children }) => {
-  return (
+export const ToastContainer: React.FC<ToastContainerProps> = ({ children }) => (
     <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center p-4 pointer-events-none">
       <div className="pointer-events-auto">
         <AnimatePresence mode="wait">
@@ -107,5 +107,4 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ children }) => {
         </AnimatePresence>
       </div>
     </div>
-  );
-}; 
+  ); 
