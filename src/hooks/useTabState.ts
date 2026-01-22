@@ -25,6 +25,7 @@ interface UseTabStateReturn {
   createCreateAgentTab: () => string;
   createImportAgentTab: () => string;
   createMemoriesTab: (projectPath?: string) => string;
+  createCLIToolsTab: () => string | null;
   closeTab: (id: string, force?: boolean) => Promise<boolean>;
   closeCurrentTab: () => Promise<boolean>;
   switchToTab: (id: string) => void;
@@ -273,6 +274,23 @@ export const useTabState = (): UseTabStateReturn => {
     });
   }, [addTab, tabs, setActiveTab, updateTab]);
 
+  const createCLIToolsTab = useCallback((): string | null => {
+    // Check if CLI tools tab already exists (singleton)
+    const existingTab = tabs.find(tab => tab.type === 'cli-tools');
+    if (existingTab) {
+      setActiveTab(existingTab.id);
+      return existingTab.id;
+    }
+
+    return addTab({
+      type: 'cli-tools',
+      title: 'CLI Tools',
+      status: 'idle',
+      hasUnsavedChanges: false,
+      icon: 'terminal'
+    });
+  }, [addTab, tabs, setActiveTab]);
+
   const closeTab = useCallback(async (id: string, force = false): Promise<boolean> => {
     const tab = getTabById(id);
     if (!tab) {return true;}
@@ -360,6 +378,7 @@ export const useTabState = (): UseTabStateReturn => {
     createCreateAgentTab,
     createImportAgentTab,
     createMemoriesTab,
+    createCLIToolsTab,
     closeTab,
     closeCurrentTab,
     switchToTab: setActiveTab,

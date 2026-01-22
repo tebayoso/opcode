@@ -20,6 +20,7 @@ const MCPManager = lazy(() => import('@/components/MCPManager').then(m => ({ def
 const Settings = lazy(() => import('@/components/Settings').then(m => ({ default: m.Settings })));
 const MarkdownEditor = lazy(() => import('@/components/MarkdownEditor').then(m => ({ default: m.MarkdownEditor })));
 const ClaudeMemoriesPanel = lazy(() => import('@/components/ClaudeMemoriesPanel').then(m => ({ default: m.ClaudeMemoriesPanel })));
+const CLIToolsDashboard = lazy(() => import('@/components/CLIToolsDashboard').then(m => ({ default: m.CLIToolsDashboard })));
 // const ClaudeFileEditor = lazy(() => import('@/components/ClaudeFileEditor').then(m => ({ default: m.ClaudeFileEditor })));
 
 // Import non-lazy components for projects view
@@ -376,6 +377,13 @@ const TabPanel: React.FC<TabPanelProps> = ({ tab, isActive }) => {
                 window.dispatchEvent(new CustomEvent('close-tab', { detail: { tabId: tab.id } }));
               }}
             />
+          </div>
+        );
+
+      case 'cli-tools':
+        return (
+          <div className="h-full">
+            <CLIToolsDashboard />
           </div>
         );
 

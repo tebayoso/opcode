@@ -333,12 +333,58 @@ pub fn init_database(app: &AppHandle) -> SqliteResult<Connection> {
 
     // Create trigger to update the updated_at timestamp
     conn.execute(
-        "CREATE TRIGGER IF NOT EXISTS update_app_settings_timestamp 
-         AFTER UPDATE ON app_settings 
+        "CREATE TRIGGER IF NOT EXISTS update_app_settings_timestamp
+         AFTER UPDATE ON app_settings
          FOR EACH ROW
          BEGIN
              UPDATE app_settings SET updated_at = CURRENT_TIMESTAMP WHERE key = NEW.key;
          END",
+        [],
+    )?;
+
+    // Create cli_tool_preferences table for storing preferred CLI tool installations
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS cli_tool_preferences (
+            tool_type TEXT PRIMARY KEY,
+            preferred_path TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
+
+    // Create trigger to update the updated_at timestamp for cli_tool_preferences
+    conn.execute(
+        "CREATE TRIGGER IF NOT EXISTS update_cli_tool_preferences_timestamp
+         AFTER UPDATE ON cli_tool_preferences
+         FOR EACH ROW
+         BEGIN
+             UPDATE cli_tool_preferences SET updated_at = CURRENT_TIMESTAMP WHERE tool_type = NEW.tool_type;
+         END",
+        [],
+    )?;
+
+    // Create cli_tool_usage table for tracking config operations
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS cli_tool_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tool_type TEXT NOT NULL,
+            action TEXT NOT NULL,
+            details TEXT,
+            timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
+
+    // Create index for efficient querying by tool_type
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_cli_tool_usage_tool_type ON cli_tool_usage(tool_type)",
+        [],
+    )?;
+
+    // Create index for efficient querying by timestamp
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_cli_tool_usage_timestamp ON cli_tool_usage(timestamp)",
         [],
     )?;
 

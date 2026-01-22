@@ -1,5 +1,6 @@
 pub mod agents;
 pub mod claude;
+pub mod cli_tools;
 pub mod mcp;
 pub mod plugins;
 pub mod proxy;

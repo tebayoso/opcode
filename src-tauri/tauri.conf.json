@@ -14,13 +14,17 @@
     "windows": [
       {
         "title": "opcode",
-        "width": 800,
-        "height": 600,
+        "width": 1280,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
         "decorations": false,
         "transparent": true,
         "shadow": true,
         "center": true,
         "resizable": true,
+        "visible": true,
+        "focus": true,
         "alwaysOnTop": false
       }
     ],

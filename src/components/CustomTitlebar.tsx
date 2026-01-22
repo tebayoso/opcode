@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Minus, Square, X, Bot, BarChart3, FileText, Network, Info, MoreVertical } from 'lucide-react';
+import { Settings, Minus, Square, X, Bot, BarChart3, FileText, Network, Info, MoreVertical, Terminal } from 'lucide-react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { TooltipProvider, TooltipSimple } from '@/components/ui/tooltip-modern';
 
@@ -10,6 +10,7 @@ interface CustomTitlebarProps {
   onUsageClick?: () => void;
   onClaudeClick?: () => void;
   onMCPClick?: () => void;
+  onCLIToolsClick?: () => void;
   onInfoClick?: () => void;
 }
 
@@ -19,6 +20,7 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
   onUsageClick,
   onClaudeClick,
   onMCPClick,
+  onCLIToolsClick,
   onInfoClick
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -225,7 +227,20 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
                       <span>MCP Servers</span>
                     </button>
                   )}
-                  
+
+                  {onCLIToolsClick && (
+                    <button
+                      onClick={() => {
+                        onCLIToolsClick();
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center gap-3"
+                    >
+                      <Terminal size={14} />
+                      <span>CLI Tools</span>
+                    </button>
+                  )}
+
                   {onInfoClick && (
                     <button
                       onClick={() => {

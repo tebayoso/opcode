@@ -3,6 +3,7 @@
 
 mod checkpoint;
 mod claude_binary;
+mod cli_tools;
 mod commands;
 mod process;
 
@@ -147,11 +148,12 @@ fn main() {
             // Initialize Claude process state
             app.manage(ClaudeProcessState::default());
 
+            // Get the main window
+            let window = app.get_webview_window("main").unwrap();
+
             // Apply window vibrancy with rounded corners on macOS
             #[cfg(target_os = "macos")]
             {
-                let window = app.get_webview_window("main").unwrap();
-
                 // Try different vibrancy materials that support rounded corners
                 let materials = [
                     NSVisualEffectMaterial::UnderWindowBackground,
@@ -180,6 +182,16 @@ fn main() {
                     .expect("Failed to apply any window vibrancy");
                 }
             }
+
+            // Open DevTools in debug builds
+            #[cfg(debug_assertions)]
+            {
+                window.open_devtools();
+            }
+
+            // Ensure window is visible and focused
+            window.show().unwrap_or_default();
+            window.set_focus().unwrap_or_default();
 
             Ok(())
         })
@@ -314,6 +326,32 @@ fn main() {
             commands::plugins::plugins_save_component,
             commands::plugins::plugins_create,
             commands::plugins::plugins_delete,
+            // CLI Tools - Detection
+            commands::cli_tools::cli_tools_list,
+            commands::cli_tools::cli_tool_get_installations,
+            commands::cli_tools::cli_tool_set_preferred,
+            commands::cli_tools::cli_tool_get_preferred,
+            commands::cli_tools::cli_tools_refresh,
+            commands::cli_tools::cli_tool_is_available,
+            commands::cli_tools::cli_tool_get_command,
+            // CLI Tools - Configuration Management
+            commands::cli_tools::cli_tool_list_config_files,
+            commands::cli_tools::cli_tool_read_config_file,
+            commands::cli_tools::cli_tool_write_config_file,
+            commands::cli_tools::cli_tool_get_settings,
+            commands::cli_tools::cli_tool_set_setting,
+            commands::cli_tools::cli_tool_list_mcp_servers,
+            commands::cli_tools::cli_tool_add_mcp_server,
+            commands::cli_tools::cli_tool_remove_mcp_server,
+            commands::cli_tools::cli_tool_list_agents,
+            commands::cli_tools::cli_tool_get_agent,
+            commands::cli_tools::cli_tool_execute_cli_command,
+            commands::cli_tools::cli_tool_get_config_dir,
+            // CLI Tools - Usage Tracking
+            commands::cli_tools::cli_tool_track_usage,
+            commands::cli_tools::cli_tool_get_usage,
+            commands::cli_tools::cli_tool_get_usage_stats,
+            commands::cli_tools::cli_tool_clear_usage,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

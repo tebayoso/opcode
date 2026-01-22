@@ -1,5 +1,20 @@
 import { apiCall } from './apiAdapter';
 import type { HooksConfiguration } from '@/types/hooks';
+import type {
+  CLIToolsStatus,
+  CLIToolInstallation,
+  CLIToolType,
+  ConfigFileInfo,
+  ConfigFileContent,
+  ToolSettings,
+  CLIToolMCPServerConfig,
+  MCPServerInput,
+  CLIToolAgentDefinition,
+  CommandOutput,
+  CLIToolUsageEntry,
+  CLIToolUsageStats,
+  UsageAction,
+} from '@/types/cli-tools';
 
 /** Process type for tracking in ProcessRegistry */
 export type ProcessType = 
@@ -2418,6 +2433,357 @@ export const api = {
       await apiCall("plugins_delete", { pluginPath });
     } catch (error) {
       console.error("Failed to delete plugin:", error);
+      throw error;
+    }
+  },
+
+  // =====================================
+  // CLI Tools API
+  // =====================================
+
+  /**
+   * Lists all CLI tools with their installation status
+   * @returns Promise resolving to CLI tools status
+   */
+  async listCLITools(): Promise<CLIToolsStatus> {
+    try {
+      return await apiCall<CLIToolsStatus>("cli_tools_list");
+    } catch (error) {
+      console.error("Failed to list CLI tools:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gets all installations for a specific CLI tool
+   * @param toolType - The type of CLI tool
+   * @returns Promise resolving to array of installations
+   */
+  async getCLIToolInstallations(toolType: CLIToolType): Promise<CLIToolInstallation[]> {
+    try {
+      return await apiCall<CLIToolInstallation[]>("cli_tool_get_installations", { toolType });
+    } catch (error) {
+      console.error("Failed to get CLI tool installations:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Sets the preferred installation for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @param path - The path to set as preferred
+   * @returns Promise resolving when the preference is saved
+   */
+  async setCLIToolPreferred(toolType: CLIToolType, path: string): Promise<void> {
+    try {
+      await apiCall("cli_tool_set_preferred", { toolType, path });
+    } catch (error) {
+      console.error("Failed to set CLI tool preferred:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gets the preferred installation path for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @returns Promise resolving to the preferred path or null
+   */
+  async getCLIToolPreferred(toolType: CLIToolType): Promise<string | null> {
+    try {
+      return await apiCall<string | null>("cli_tool_get_preferred", { toolType });
+    } catch (error) {
+      console.error("Failed to get CLI tool preferred:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Forces a refresh of CLI tools detection
+   * @returns Promise resolving to updated CLI tools status
+   */
+  async refreshCLITools(): Promise<CLIToolsStatus> {
+    try {
+      return await apiCall<CLIToolsStatus>("cli_tools_refresh");
+    } catch (error) {
+      console.error("Failed to refresh CLI tools:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Checks if a CLI tool is available
+   * @param toolType - The type of CLI tool
+   * @returns Promise resolving to whether the tool is available
+   */
+  async isCLIToolAvailable(toolType: CLIToolType): Promise<boolean> {
+    try {
+      return await apiCall<boolean>("cli_tool_is_available", { toolType });
+    } catch (error) {
+      console.error("Failed to check CLI tool availability:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gets the command to execute for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @returns Promise resolving to the command or null if not available
+   */
+  async getCLIToolCommand(toolType: CLIToolType): Promise<string | null> {
+    try {
+      return await apiCall<string | null>("cli_tool_get_command", { toolType });
+    } catch (error) {
+      console.error("Failed to get CLI tool command:", error);
+      throw error;
+    }
+  },
+
+  // =====================================
+  // CLI Tools Configuration Management API
+  // =====================================
+
+  /**
+   * Lists configuration files for a CLI tool (metadata only, lazy loading)
+   * @param toolType - The type of CLI tool
+   * @returns Promise resolving to array of config file info
+   */
+  async listCLIToolConfigFiles(toolType: CLIToolType): Promise<ConfigFileInfo[]> {
+    try {
+      return await apiCall<ConfigFileInfo[]>("cli_tool_list_config_files", { toolType });
+    } catch (error) {
+      console.error("Failed to list CLI tool config files:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reads a specific config file (on-demand loading)
+   * @param toolType - The type of CLI tool
+   * @param path - Path to the config file
+   * @returns Promise resolving to the config file content
+   */
+  async readCLIToolConfigFile(toolType: CLIToolType, path: string): Promise<ConfigFileContent> {
+    try {
+      return await apiCall<ConfigFileContent>("cli_tool_read_config_file", { toolType, path });
+    } catch (error) {
+      console.error("Failed to read CLI tool config file:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Writes a config file
+   * @param toolType - The type of CLI tool
+   * @param path - Path to the config file
+   * @param content - Content to write
+   * @returns Promise resolving when the file is written
+   */
+  async writeCLIToolConfigFile(toolType: CLIToolType, path: string, content: string): Promise<void> {
+    try {
+      await apiCall("cli_tool_write_config_file", { toolType, path, content });
+    } catch (error) {
+      console.error("Failed to write CLI tool config file:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gets structured settings for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @returns Promise resolving to the tool settings
+   */
+  async getCLIToolSettings(toolType: CLIToolType): Promise<ToolSettings> {
+    try {
+      return await apiCall<ToolSettings>("cli_tool_get_settings", { toolType });
+    } catch (error) {
+      console.error("Failed to get CLI tool settings:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Sets a specific setting for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @param key - Setting key
+   * @param value - Setting value
+   * @returns Promise resolving when the setting is saved
+   */
+  async setCLIToolSetting(toolType: CLIToolType, key: string, value: unknown): Promise<void> {
+    try {
+      await apiCall("cli_tool_set_setting", { toolType, key, value });
+    } catch (error) {
+      console.error("Failed to set CLI tool setting:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lists MCP servers configured for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @returns Promise resolving to array of MCP server configs
+   */
+  async listCLIToolMCPServers(toolType: CLIToolType): Promise<CLIToolMCPServerConfig[]> {
+    try {
+      return await apiCall<CLIToolMCPServerConfig[]>("cli_tool_list_mcp_servers", { toolType });
+    } catch (error) {
+      console.error("Failed to list CLI tool MCP servers:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Adds an MCP server to a CLI tool
+   * @param toolType - The type of CLI tool
+   * @param config - MCP server configuration input
+   * @returns Promise resolving when the server is added
+   */
+  async addCLIToolMCPServer(toolType: CLIToolType, config: MCPServerInput): Promise<void> {
+    try {
+      await apiCall("cli_tool_add_mcp_server", { toolType, config });
+    } catch (error) {
+      console.error("Failed to add CLI tool MCP server:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Removes an MCP server from a CLI tool
+   * @param toolType - The type of CLI tool
+   * @param name - Name of the MCP server to remove
+   * @returns Promise resolving when the server is removed
+   */
+  async removeCLIToolMCPServer(toolType: CLIToolType, name: string): Promise<void> {
+    try {
+      await apiCall("cli_tool_remove_mcp_server", { toolType, name });
+    } catch (error) {
+      console.error("Failed to remove CLI tool MCP server:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lists agents/commands for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @returns Promise resolving to array of agent definitions
+   */
+  async listCLIToolAgents(toolType: CLIToolType): Promise<CLIToolAgentDefinition[]> {
+    try {
+      return await apiCall<CLIToolAgentDefinition[]>("cli_tool_list_agents", { toolType });
+    } catch (error) {
+      console.error("Failed to list CLI tool agents:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gets a specific agent/command for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @param name - Name of the agent
+   * @returns Promise resolving to the agent definition
+   */
+  async getCLIToolAgent(toolType: CLIToolType, name: string): Promise<CLIToolAgentDefinition> {
+    try {
+      return await apiCall<CLIToolAgentDefinition>("cli_tool_get_agent", { toolType, name });
+    } catch (error) {
+      console.error("Failed to get CLI tool agent:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Executes a CLI tool command
+   * @param toolType - The type of CLI tool
+   * @param command - Command to execute
+   * @param args - Command arguments
+   * @returns Promise resolving to the command output
+   */
+  async executeCLIToolCommand(toolType: CLIToolType, command: string, args: string[]): Promise<CommandOutput> {
+    try {
+      return await apiCall<CommandOutput>("cli_tool_execute_cli_command", { toolType, command, args });
+    } catch (error) {
+      console.error("Failed to execute CLI tool command:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gets the config directory for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @returns Promise resolving to the config directory path
+   */
+  async getCLIToolConfigDir(toolType: CLIToolType): Promise<string> {
+    try {
+      return await apiCall<string>("cli_tool_get_config_dir", { toolType });
+    } catch (error) {
+      console.error("Failed to get CLI tool config directory:", error);
+      throw error;
+    }
+  },
+
+  // =========================================
+  // CLI Tools - Usage Tracking
+  // =========================================
+
+  /**
+   * Tracks a usage action for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @param action - The action being tracked
+   * @param details - Optional details about the action
+   */
+  async trackCLIToolUsage(
+    toolType: CLIToolType,
+    action: UsageAction,
+    details?: string
+  ): Promise<void> {
+    try {
+      await apiCall("cli_tool_track_usage", { toolType, action, details });
+    } catch (error) {
+      console.error("Failed to track CLI tool usage:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gets usage history for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @param limit - Maximum number of entries to return
+   * @returns Promise resolving to an array of usage entries
+   */
+  async getCLIToolUsage(
+    toolType: CLIToolType,
+    limit: number = 100
+  ): Promise<CLIToolUsageEntry[]> {
+    try {
+      return await apiCall<CLIToolUsageEntry[]>("cli_tool_get_usage", { toolType, limit });
+    } catch (error) {
+      console.error("Failed to get CLI tool usage:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gets usage statistics for a CLI tool
+   * @param toolType - The type of CLI tool
+   * @returns Promise resolving to usage statistics
+   */
+  async getCLIToolUsageStats(toolType: CLIToolType): Promise<CLIToolUsageStats> {
+    try {
+      return await apiCall<CLIToolUsageStats>("cli_tool_get_usage_stats", { toolType });
+    } catch (error) {
+      console.error("Failed to get CLI tool usage stats:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Clears usage history for a CLI tool
+   * @param toolType - The type of CLI tool
+   */
+  async clearCLIToolUsage(toolType: CLIToolType): Promise<void> {
+    try {
+      await apiCall("cli_tool_clear_usage", { toolType });
+    } catch (error) {
+      console.error("Failed to clear CLI tool usage:", error);
       throw error;
     }
   },
