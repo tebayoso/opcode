@@ -7,6 +7,9 @@ pub mod types;
 pub mod validation;
 pub mod websocket;
 
+#[cfg(test)]
+mod tests;
+
 pub use error::RegistryError;
 pub use jobs::{JobManager, JobManagerImpl};
 pub use mcp_registry::{MCPRegistry, MCPRegistryImpl};

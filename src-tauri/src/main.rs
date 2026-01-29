@@ -36,6 +36,10 @@ use commands::mcp::{
     mcp_read_project_config, mcp_remove, mcp_reset_project_choices, mcp_save_project_config,
     mcp_serve, mcp_test_connection,
 };
+use commands::secure_storage::{
+    check_master_key_exists, delete_api_key, get_api_key_value, initialize_master_key,
+    list_api_keys, store_api_key, unlock_with_master_key, SecureStorageState,
+};
 use commands::tool_registry::{
     mcp_registry_add_server, mcp_registry_get_server, mcp_registry_list_servers,
     mcp_registry_remove_server, mcp_registry_set_tool_enablement, mcp_registry_test_connection,
@@ -60,7 +64,7 @@ use commands::usage::{
     get_session_stats, get_usage_by_date_range, get_usage_details, get_usage_stats,
 };
 use process::ProcessRegistryState;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
 #[cfg(target_os = "macos")]
@@ -161,6 +165,9 @@ fn main() {
 
             // Initialize Claude process state
             app.manage(ClaudeProcessState::default());
+
+            let secure_storage = Arc::new(crate::secure_storage::SecureStorage::new());
+            app.manage(SecureStorageState { storage: secure_storage });
 
             // Get the main window
             let window = app.get_webview_window("main").unwrap();
@@ -399,6 +406,13 @@ fn main() {
             mcp_registry_remove_server,
             mcp_registry_set_tool_enablement,
             mcp_registry_test_connection,
+            check_master_key_exists,
+            initialize_master_key,
+            unlock_with_master_key,
+            store_api_key,
+            list_api_keys,
+            get_api_key_value,
+            delete_api_key,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

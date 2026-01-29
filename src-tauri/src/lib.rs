@@ -6,6 +6,7 @@ pub mod claude_binary;
 pub mod cli_tools;
 pub mod commands;
 pub mod process;
+pub mod secure_storage;
 pub mod tool_registry;
 pub mod web_server;
 

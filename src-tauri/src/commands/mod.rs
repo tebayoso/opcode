@@ -5,6 +5,7 @@ pub mod file_ops;
 pub mod mcp;
 pub mod plugins;
 pub mod proxy;
+pub mod secure_storage;
 pub mod skills;
 pub mod slash_commands;
 pub mod storage;
