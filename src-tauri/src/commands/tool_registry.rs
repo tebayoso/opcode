@@ -1,5 +1,5 @@
 use crate::tool_registry::{
-    ToolInstallation, ToolRegistry, ToolRegistryImpl, ToolSpecification,
+    ToolInstallation, ToolRegistry, ToolRegistryImpl, ToolSpecification, ValidationEngine, ValidationEngineImpl,
 };
 use crate::commands::agents::AgentDb;
 use serde::{Deserialize, Serialize};
@@ -217,4 +217,23 @@ pub async fn tool_registry_update_installation(
     Ok(ApiResponse {
         data: "Installation updated successfully".to_string(),
     })
+}
+
+#[tauri::command]
+pub async fn tool_registry_run_validation(
+    db: State<'_, AgentDb>,
+    tool_id: String,
+) -> Result<ApiResponse<Vec<crate::tool_registry::ValidationResult>>, String> {
+    let registry = create_registry(db)?;
+
+    let tool = registry
+        .get_tool(&tool_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("Tool not found: {}", tool_id))?;
+
+    let validator = ValidationEngineImpl::new();
+    let results = validator.validate_tool(&tool).await.map_err(|e| e.to_string())?;
+
+    Ok(ApiResponse { data: results })
 }

@@ -1,6 +1,7 @@
 pub mod error;
 pub mod registry;
 pub mod types;
+pub mod validation;
 
 pub use error::RegistryError;
 pub use registry::{ToolRegistry, ToolRegistryImpl};
@@ -11,3 +12,4 @@ pub use types::{
     ToolSpecification, ToolType, TransportType, ValidationResult, ValidationStatus,
     ValidationType,
 };
+pub use validation::{ValidationEngine, ValidationEngineImpl};

@@ -38,8 +38,8 @@ use commands::mcp::{
 };
 use commands::tool_registry::{
     tool_registry_get_installation, tool_registry_get_tool, tool_registry_list_tools,
-    tool_registry_register_tool, tool_registry_unregister_tool, tool_registry_update_installation,
-    tool_registry_update_tool, tool_registry_validate_tool,
+    tool_registry_register_tool, tool_registry_run_validation, tool_registry_unregister_tool,
+    tool_registry_update_installation, tool_registry_update_tool, tool_registry_validate_tool,
 };
 
 use commands::file_ops::{
@@ -378,6 +378,7 @@ fn main() {
             tool_registry_validate_tool,
             tool_registry_get_installation,
             tool_registry_update_installation,
+            tool_registry_run_validation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
