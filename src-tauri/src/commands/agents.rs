@@ -385,6 +385,133 @@ pub fn init_database_at_path(db_path: std::path::PathBuf) -> SqliteResult<Connec
         [],
     )?;
 
+    // Create tool_specifications table for unified tool registry
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS tool_specifications (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            source TEXT NOT NULL,
+            spec_json TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            is_enabled INTEGER DEFAULT 1
+        )",
+        [],
+    )?;
+
+    // Create trigger for tool_specifications timestamp
+    conn.execute(
+        "CREATE TRIGGER IF NOT EXISTS update_tool_specifications_timestamp
+         AFTER UPDATE ON tool_specifications
+         FOR EACH ROW
+         BEGIN
+             UPDATE tool_specifications SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+         END",
+        [],
+    )?;
+
+    // Create tool_installations table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS tool_installations (
+            tool_id TEXT PRIMARY KEY,
+            detected_paths TEXT,
+            preferred_path TEXT,
+            version TEXT,
+            is_valid INTEGER,
+            last_validated TEXT,
+            validation_errors TEXT,
+            FOREIGN KEY (tool_id) REFERENCES tool_specifications(id)
+        )",
+        [],
+    )?;
+
+    // Create mcp_servers table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS mcp_servers (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            transport_type TEXT NOT NULL,
+            config_json TEXT NOT NULL,
+            is_enabled_globally INTEGER DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
+
+    // Create trigger for mcp_servers timestamp
+    conn.execute(
+        "CREATE TRIGGER IF NOT EXISTS update_mcp_servers_timestamp
+         AFTER UPDATE ON mcp_servers
+         FOR EACH ROW
+         BEGIN
+             UPDATE mcp_servers SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+         END",
+        [],
+    )?;
+
+    // Create mcp_tool_enablement table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS mcp_tool_enablement (
+            mcp_server_id TEXT,
+            tool_id TEXT,
+            is_enabled INTEGER DEFAULT 0,
+            config_override TEXT,
+            PRIMARY KEY (mcp_server_id, tool_id),
+            FOREIGN KEY (mcp_server_id) REFERENCES mcp_servers(id),
+            FOREIGN KEY (tool_id) REFERENCES tool_specifications(id)
+        )",
+        [],
+    )?;
+
+    // Create async_jobs table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS async_jobs (
+            id TEXT PRIMARY KEY,
+            job_type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            params TEXT,
+            progress INTEGER DEFAULT 0,
+            result TEXT,
+            error_message TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            started_at TEXT,
+            completed_at TEXT,
+            cancelled_at TEXT
+        )",
+        [],
+    )?;
+
+    // Create validation_results table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS validation_results (
+            id TEXT PRIMARY KEY,
+            tool_id TEXT NOT NULL,
+            validation_type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            details TEXT,
+            checked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (tool_id) REFERENCES tool_specifications(id)
+        )",
+        [],
+    )?;
+
+    // Create system_warnings table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS system_warnings (
+            id TEXT PRIMARY KEY,
+            warning_type TEXT NOT NULL,
+            severity TEXT NOT NULL,
+            message TEXT NOT NULL,
+            details TEXT,
+            is_resolved INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            resolved_at TEXT
+        )",
+        [],
+    )?;
+
     Ok(conn)
 }
 
