@@ -1,10 +1,12 @@
 pub mod error;
+pub mod jobs;
 pub mod registry;
 pub mod types;
 pub mod validation;
 pub mod websocket;
 
 pub use error::RegistryError;
+pub use jobs::{JobManager, JobManagerImpl};
 pub use registry::{ToolRegistry, ToolRegistryImpl};
 pub use types::{
     AsyncJob, ConfigFileSpec, ConfigSpec, InstallationConfig, JobStatus, JobType,

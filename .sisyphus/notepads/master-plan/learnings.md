@@ -34,7 +34,40 @@ All 8 tools defined with complete specs:
 - Clear commit messages with scope and description
 - Multiple commits for different concerns (schema, types, implementation, API)
 
+## 2026-01-29 - Phase 2 Partial Complete
+
+### Validation Engine
+- Trait-based design (`ValidationEngine`) for testability
+- 5 validation types: Installation, Configuration, Functional, Network, Permissions
+- Binary detection via `which` command and standard paths
+- Version extraction using configurable regex patterns
+- Config file existence checks with base_dir expansion
+- Permission checks using std::fs::metadata on Unix
+
+### WebSocket Server
+- Broadcast-based architecture using tokio::sync::broadcast
+- ControlPanelState manages connected clients and event distribution
+- Event-driven architecture with ControlPanelEvent enum
+- Support for multiple client connections with proper cleanup
+- Ping/pong for connection health checks
+- Channel-based subscription model
+
+### WebSocket Event Types
+- ToolStatusChanged, ToolInstallationUpdated
+- WarningAdded, WarningResolved
+- ValidationCompleted
+- JobProgress, JobCompleted
+- MCPServerUpdated, MCPSyncCompleted
+- UsageUpdated
+
+## Current Progress
+- Phase 1: 5/5 tasks (100%) ✅ COMPLETE
+- Phase 2: 2/5 tasks (40%) - Validation ✅, WebSocket ✅, Async Jobs pending, CLI Wrapper pending, MCP Registry pending
+- Total: 7/23 tasks (30%)
+
 ## Next Steps
-- Phase 2: Core Backend (Validation, WebSocket, Async Jobs, MCP Registry)
+- Phase 2.3: Async Job System
+- Phase 2.4: CLI Wrapper for skills.sh
+- Phase 2.5: MCP Registry service
 - Phase 3: Frontend Foundation
 - Phase 4: Features integration

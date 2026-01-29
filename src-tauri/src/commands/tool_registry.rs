@@ -1,5 +1,6 @@
 use crate::tool_registry::{
-    ToolInstallation, ToolRegistry, ToolRegistryImpl, ToolSpecification, ValidationEngine, ValidationEngineImpl,
+    JobManager, JobManagerImpl, JobType, ToolInstallation, ToolRegistry, ToolRegistryImpl,
+    ToolSpecification, ValidationEngine, ValidationEngineImpl,
 };
 use crate::commands::agents::AgentDb;
 use serde::{Deserialize, Serialize};
@@ -57,6 +58,11 @@ pub struct ToolDetailResponse {
 fn create_registry(db: State<'_, AgentDb>) -> Result<ToolRegistryImpl, String> {
     let db_arc = Arc::new(db.0.clone());
     ToolRegistryImpl::new(db_arc).map_err(|e| e.to_string())
+}
+
+fn create_job_manager(db: State<'_, AgentDb>) -> Result<JobManagerImpl, String> {
+    let db_arc = Arc::new(db.0.clone());
+    JobManagerImpl::new(db_arc).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -236,4 +242,97 @@ pub async fn tool_registry_run_validation(
     let results = validator.validate_tool(&tool).await.map_err(|e| e.to_string())?;
 
     Ok(ApiResponse { data: results })
+}
+
+#[derive(Deserialize)]
+pub struct CreateJobRequest {
+    pub job_type: String,
+    pub params: serde_json::Value,
+}
+
+#[derive(Serialize)]
+pub struct CreateJobResponse {
+    pub job_id: String,
+}
+
+#[tauri::command]
+pub async fn tool_registry_create_job(
+    db: State<'_, AgentDb>,
+    request: CreateJobRequest,
+) -> Result<ApiResponse<CreateJobResponse>, String> {
+    let job_manager = create_job_manager(db)?;
+
+    let job_type = match request.job_type.as_str() {
+        "skills_install" => JobType::SkillsInstall,
+        "skills_uninstall" => JobType::SkillsUninstall,
+        "tool_validation" => JobType::ToolValidation,
+        "mcp_sync" => JobType::MCPSync,
+        "config_sync" => JobType::ConfigSync,
+        _ => return Err(format!("Unknown job type: {}", request.job_type)),
+    };
+
+    let job_id = job_manager
+        .create_job(job_type, request.params)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ApiResponse {
+        data: CreateJobResponse { job_id },
+    })
+}
+
+#[tauri::command]
+pub async fn tool_registry_get_job(
+    db: State<'_, AgentDb>,
+    job_id: String,
+) -> Result<ApiResponse<Option<crate::tool_registry::AsyncJob>>, String> {
+    let job_manager = create_job_manager(db)?;
+
+    let job = job_manager
+        .get_job(&job_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ApiResponse { data: job })
+}
+
+#[tauri::command]
+pub async fn tool_registry_list_jobs(
+    db: State<'_, AgentDb>,
+    status: Option<String>,
+) -> Result<ApiResponse<Vec<crate::tool_registry::AsyncJob>>, String> {
+    let job_manager = create_job_manager(db)?;
+
+    let job_status = status.map(|s| match s.as_str() {
+        "pending" => crate::tool_registry::JobStatus::Pending,
+        "running" => crate::tool_registry::JobStatus::Running,
+        "completed" => crate::tool_registry::JobStatus::Completed,
+        "failed" => crate::tool_registry::JobStatus::Failed,
+        "cancelled" => crate::tool_registry::JobStatus::Cancelled,
+        _ => crate::tool_registry::JobStatus::Pending,
+    });
+
+    let jobs = job_manager
+        .list_jobs(job_status)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ApiResponse { data: jobs })
+}
+
+#[tauri::command]
+pub async fn tool_registry_cancel_job(
+    db: State<'_, AgentDb>,
+    job_id: String,
+) -> Result<ApiResponse<String>, String> {
+    let job_manager = create_job_manager(db)?;
+
+    job_manager
+        .cancel_job(&job_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ApiResponse {
+        data: "Job cancelled successfully".to_string(),
+    })
 }
