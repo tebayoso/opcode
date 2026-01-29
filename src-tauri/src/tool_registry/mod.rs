@@ -1,5 +1,6 @@
 pub mod error;
 pub mod jobs;
+pub mod mcp_registry;
 pub mod registry;
 pub mod skills_cli;
 pub mod types;
@@ -8,6 +9,7 @@ pub mod websocket;
 
 pub use error::RegistryError;
 pub use jobs::{JobManager, JobManagerImpl};
+pub use mcp_registry::{MCPRegistry, MCPRegistryImpl};
 pub use registry::{ToolRegistry, ToolRegistryImpl};
 pub use skills_cli::{SkillInfo, SkillInstallProgress, SkillsCLI, SkillsSearchResult};
 pub use types::{

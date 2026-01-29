@@ -37,6 +37,8 @@ use commands::mcp::{
     mcp_serve, mcp_test_connection,
 };
 use commands::tool_registry::{
+    mcp_registry_add_server, mcp_registry_get_server, mcp_registry_list_servers,
+    mcp_registry_remove_server, mcp_registry_set_tool_enablement, mcp_registry_test_connection,
     skills_check_updates, skills_install, skills_list_installed, skills_search,
     skills_uninstall, tool_registry_cancel_job, tool_registry_create_job,
     tool_registry_get_installation, tool_registry_get_job, tool_registry_get_tool,
@@ -391,6 +393,12 @@ fn main() {
             skills_uninstall,
             skills_list_installed,
             skills_check_updates,
+            mcp_registry_list_servers,
+            mcp_registry_get_server,
+            mcp_registry_add_server,
+            mcp_registry_remove_server,
+            mcp_registry_set_tool_enablement,
+            mcp_registry_test_connection,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

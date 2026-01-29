@@ -1,6 +1,7 @@
 use crate::tool_registry::{
-    JobManager, JobManagerImpl, JobType, SkillInfo, SkillsCLI, ToolInstallation, ToolRegistry,
-    ToolRegistryImpl, ToolSpecification, ValidationEngine, ValidationEngineImpl,
+    JobManager, JobManagerImpl, JobType, MCPRegistry, MCPRegistryImpl, MCPTransportConfig,
+    SkillInfo, SkillsCLI, ToolInstallation, ToolRegistry, ToolRegistryImpl, ToolSpecification,
+    TransportType, ValidationEngine, ValidationEngineImpl,
 };
 use crate::commands::agents::AgentDb;
 use serde::{Deserialize, Serialize};
@@ -63,6 +64,11 @@ fn create_registry(db: State<'_, AgentDb>) -> Result<ToolRegistryImpl, String> {
 fn create_job_manager(db: State<'_, AgentDb>) -> Result<JobManagerImpl, String> {
     let db_arc = Arc::new(db.0.clone());
     JobManagerImpl::new(db_arc).map_err(|e| e.to_string())
+}
+
+fn create_mcp_registry(db: State<'_, AgentDb>) -> Result<MCPRegistryImpl, String> {
+    let db_arc = Arc::new(db.0.clone());
+    MCPRegistryImpl::new(db_arc).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -417,4 +423,96 @@ pub async fn skills_check_updates() -> Result<ApiResponse<Vec<SkillInfo>>, Strin
     let skills_cli = SkillsCLI::new();
     let skills = skills_cli.check_updates().await.map_err(|e| e.to_string())?;
     Ok(ApiResponse { data: skills })
+}
+
+#[tauri::command]
+pub async fn mcp_registry_list_servers(
+    db: State<'_, AgentDb>,
+) -> Result<ApiResponse<Vec<crate::tool_registry::MCPServer>>, String> {
+    let mcp_registry = create_mcp_registry(db)?;
+    let servers = mcp_registry.list_servers().await.map_err(|e| e.to_string())?;
+    Ok(ApiResponse { data: servers })
+}
+
+#[tauri::command]
+pub async fn mcp_registry_get_server(
+    db: State<'_, AgentDb>,
+    server_id: String,
+) -> Result<ApiResponse<Option<crate::tool_registry::MCPServer>>, String> {
+    let mcp_registry = create_mcp_registry(db)?;
+    let server = mcp_registry.get_server(&server_id).await.map_err(|e| e.to_string())?;
+    Ok(ApiResponse { data: server })
+}
+
+#[derive(Deserialize)]
+pub struct AddMCPServerRequest {
+    pub name: String,
+    pub transport_type: String,
+    pub config: MCPTransportConfig,
+}
+
+#[tauri::command]
+pub async fn mcp_registry_add_server(
+    db: State<'_, AgentDb>,
+    request: AddMCPServerRequest,
+) -> Result<ApiResponse<String>, String> {
+    let mcp_registry = create_mcp_registry(db)?;
+
+    let transport_type = match request.transport_type.as_str() {
+        "stdio" => TransportType::Stdio,
+        "sse" => TransportType::Sse,
+        "http" => TransportType::Http,
+        _ => return Err(format!("Unknown transport type: {}", request.transport_type)),
+    };
+
+    let server_id = mcp_registry
+        .add_server(request.name, transport_type, request.config)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ApiResponse { data: server_id })
+}
+
+#[tauri::command]
+pub async fn mcp_registry_remove_server(
+    db: State<'_, AgentDb>,
+    server_id: String,
+) -> Result<ApiResponse<String>, String> {
+    let mcp_registry = create_mcp_registry(db)?;
+    mcp_registry.remove_server(&server_id).await.map_err(|e| e.to_string())?;
+    Ok(ApiResponse {
+        data: "Server removed successfully".to_string(),
+    })
+}
+
+#[derive(Deserialize)]
+pub struct SetToolEnablementRequest {
+    pub server_id: String,
+    pub tool_id: String,
+    pub is_enabled: bool,
+}
+
+#[tauri::command]
+pub async fn mcp_registry_set_tool_enablement(
+    db: State<'_, AgentDb>,
+    request: SetToolEnablementRequest,
+) -> Result<ApiResponse<String>, String> {
+    let mcp_registry = create_mcp_registry(db)?;
+    mcp_registry
+        .set_tool_enablement(&request.server_id, &request.tool_id, request.is_enabled, None)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ApiResponse {
+        data: "Tool enablement updated".to_string(),
+    })
+}
+
+#[tauri::command]
+pub async fn mcp_registry_test_connection(
+    db: State<'_, AgentDb>,
+    server_id: String,
+) -> Result<ApiResponse<bool>, String> {
+    let mcp_registry = create_mcp_registry(db)?;
+    let result = mcp_registry.test_connection(&server_id).await.map_err(|e| e.to_string())?;
+    Ok(ApiResponse { data: result })
 }
