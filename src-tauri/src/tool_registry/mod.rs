@@ -3,7 +3,7 @@ pub mod registry;
 pub mod types;
 
 pub use error::RegistryError;
-pub use registry::ToolRegistry;
+pub use registry::{ToolRegistry, ToolRegistryImpl};
 pub use types::{
     AsyncJob, ConfigFileSpec, ConfigSpec, InstallationConfig, JobStatus, JobType,
     MCPServer, MCPTransportConfig, MCPToolEnablement, Severity, SettingSchema,
