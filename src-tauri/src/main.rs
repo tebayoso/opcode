@@ -36,6 +36,11 @@ use commands::mcp::{
     mcp_read_project_config, mcp_remove, mcp_reset_project_choices, mcp_save_project_config,
     mcp_serve, mcp_test_connection,
 };
+use commands::tool_registry::{
+    tool_registry_get_installation, tool_registry_get_tool, tool_registry_list_tools,
+    tool_registry_register_tool, tool_registry_unregister_tool, tool_registry_update_installation,
+    tool_registry_update_tool, tool_registry_validate_tool,
+};
 
 use commands::file_ops::{
     file_ops_bulk, file_ops_clone_agent, file_ops_clone_skill, file_ops_copy, file_ops_delete,
@@ -365,6 +370,14 @@ fn main() {
             commands::cli_tools::cli_tool_get_usage,
             commands::cli_tools::cli_tool_get_usage_stats,
             commands::cli_tools::cli_tool_clear_usage,
+            tool_registry_list_tools,
+            tool_registry_get_tool,
+            tool_registry_register_tool,
+            tool_registry_update_tool,
+            tool_registry_unregister_tool,
+            tool_registry_validate_tool,
+            tool_registry_get_installation,
+            tool_registry_update_installation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
