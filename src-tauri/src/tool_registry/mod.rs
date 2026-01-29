@@ -2,6 +2,7 @@ pub mod error;
 pub mod registry;
 pub mod types;
 pub mod validation;
+pub mod websocket;
 
 pub use error::RegistryError;
 pub use registry::{ToolRegistry, ToolRegistryImpl};
@@ -13,3 +14,4 @@ pub use types::{
     ValidationType,
 };
 pub use validation::{ValidationEngine, ValidationEngineImpl};
+pub use websocket::{ControlPanelEvent, ControlPanelState};
