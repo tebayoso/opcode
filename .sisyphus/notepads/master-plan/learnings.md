@@ -60,14 +60,38 @@ All 8 tools defined with complete specs:
 - MCPServerUpdated, MCPSyncCompleted
 - UsageUpdated
 
+## 2026-01-29 - Phase 2 Complete
+
+### Async Job System
+- JobManager trait for managing long-running operations
+- SQLite persistence for job state
+- Progress tracking via mpsc channels
+- Job lifecycle: pending → running → completed/failed/cancelled
+- Job types: SkillsInstall, SkillsUninstall, ToolValidation, MCPSync, ConfigSync
+- Cleanup of old completed jobs
+
+### Skills.sh CLI Wrapper
+- SkillsCLI wrapper for npx skills commands
+- search: Query skills registry
+- install/uninstall: With progress streaming via channels
+- list_installed: Filter by scope (global/project)
+- check_updates: Find outdated skills
+- Structured types: SkillInfo, SkillInstallProgress
+
+### MCP Registry Service
+- MCPRegistry trait for universal MCP server management
+- Support for 3 transport types: stdio, sse, http
+- Per-tool enablement with config overrides
+- Connection testing for all transport types
+- Cross-tool sync capability
+- SQLite storage for servers and enablements
+
 ## Current Progress
 - Phase 1: 5/5 tasks (100%) ✅ COMPLETE
-- Phase 2: 2/5 tasks (40%) - Validation ✅, WebSocket ✅, Async Jobs pending, CLI Wrapper pending, MCP Registry pending
-- Total: 7/23 tasks (30%)
+- Phase 2: 5/5 tasks (100%) ✅ COMPLETE
+- Total: 10/23 tasks (43%)
 
 ## Next Steps
-- Phase 2.3: Async Job System
-- Phase 2.4: CLI Wrapper for skills.sh
-- Phase 2.5: MCP Registry service
-- Phase 3: Frontend Foundation
-- Phase 4: Features integration
+- Phase 3: Frontend Foundation (New UI shell, Dashboard, WebSocket provider, Tool pages)
+- Phase 4: Features integration (Skills UI, MCP UI, Sync, Validation UI)
+- Phase 5: Polish (User-defined tools, Custom configs, Error handling, Testing, Docs)
