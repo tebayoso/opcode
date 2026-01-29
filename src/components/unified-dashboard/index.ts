@@ -1,6 +1,7 @@
 export { UnifiedDashboard } from './UnifiedDashboard';
 export { UnifiedDashboardProvider, useUnifiedDashboard } from './UnifiedDashboardContext';
 export { UnifiedDashboardSidebar } from './UnifiedDashboardSidebar';
+export { RegisterToolDialog } from './RegisterToolDialog';
 export { OverviewPanel } from './panels/OverviewPanel';
 export { ToolsPanel } from './panels/ToolsPanel';
 export { SkillsPanel } from './panels/SkillsPanel';

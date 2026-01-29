@@ -3,6 +3,7 @@ import { useUnifiedDashboard } from '../UnifiedDashboardContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { RegisterToolDialog } from '../RegisterToolDialog';
 import { 
   Terminal, 
   Settings, 
@@ -10,7 +11,8 @@ import {
   Play,
   CheckCircle2,
   AlertCircle,
-  Loader2
+  Loader2,
+  User
 } from 'lucide-react';
 
 export function ToolsPanel() {
@@ -24,16 +26,25 @@ export function ToolsPanel() {
     );
   }
 
-  const llmTools = tools.filter(t => t.tool_type === 'llm');
-  const cliTools = tools.filter(t => t.tool_type === 'cli');
-  const codecTools = tools.filter(t => t.tool_type === 'codec');
+  const llmTools = tools.filter(t => t.tool_type === 'llm' && t.source === 'builtin');
+  const cliTools = tools.filter(t => t.tool_type === 'cli' && t.source === 'builtin');
+  const codecTools = tools.filter(t => t.tool_type === 'codec' && t.source === 'builtin');
+  const userDefinedTools = tools.filter(t => t.source === 'user_defined');
 
   const ToolCard = ({ tool }: { tool: typeof tools[0] }) => (
     <Card className="hover:border-primary/50 transition-colors">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="text-lg">{tool.name}</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              {tool.name}
+              {tool.source === 'user_defined' && (
+                <Badge variant="outline" className="text-xs">
+                  <User className="w-3 h-3 mr-1" />
+                  Custom
+                </Badge>
+              )}
+            </CardTitle>
             <CardDescription className="capitalize">
               {tool.tool_type}
             </CardDescription>
@@ -96,10 +107,13 @@ export function ToolsPanel() {
             Manage your CLI tools and AI assistants
           </p>
         </div>
-        <Button onClick={refreshTools} variant="outline">
-          <Loader2 className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <RegisterToolDialog onToolRegistered={refreshTools} />
+          <Button onClick={refreshTools} variant="outline">
+            <Loader2 className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {llmTools.length > 0 && (
@@ -129,6 +143,17 @@ export function ToolsPanel() {
           <h2 className="text-xl font-semibold mb-4">Codecs</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {codecTools.map((tool) => (
+              <ToolCard key={tool.id} tool={tool} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {userDefinedTools.length > 0 && (
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Custom Tools</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {userDefinedTools.map((tool) => (
               <ToolCard key={tool.id} tool={tool} />
             ))}
           </div>
