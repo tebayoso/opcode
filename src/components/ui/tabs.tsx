@@ -53,13 +53,14 @@ const Tabs: React.FC<TabsProps> = ({
 export interface TabsListProps {
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 /**
  * Container for tab triggers
  */
 const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
-  ({ className, ...props }, ref) => (
+  ({ className, style, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
@@ -68,7 +69,8 @@ const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
       )}
       style={{
         backgroundColor: "var(--color-muted)",
-        color: "var(--color-muted-foreground)"
+        color: "var(--color-muted-foreground)",
+        ...style,
       }}
       {...props}
     />

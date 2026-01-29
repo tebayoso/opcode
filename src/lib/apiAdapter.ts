@@ -62,10 +62,17 @@ interface ApiResponse<T> {
 /**
  * Make a REST API call to our web server
  */
-async function restApiCall<T>(endpoint: string, params?: any): Promise<T> {
+async function restApiCall<T>(
+  endpoint: string,
+  params?: any,
+  options?: { method?: 'GET' | 'POST' }
+): Promise<T> {
+  const method = options?.method || 'GET';
+
   // First handle path parameters in the endpoint string
   let processedEndpoint = endpoint;
   console.log(`[REST API] Original endpoint: ${endpoint}, params:`, params);
+  const usedKeys = new Set<string>();
   
   if (params) {
     Object.keys(params).forEach(key => {
@@ -80,6 +87,7 @@ async function restApiCall<T>(endpoint: string, params?: any): Promise<T> {
         if (processedEndpoint.includes(placeholder)) {
           console.log(`[REST API] Replacing ${placeholder} with ${params[key]}`);
           processedEndpoint = processedEndpoint.replace(placeholder, encodeURIComponent(String(params[key])));
+          usedKeys.add(key);
         }
       });
     });
@@ -87,10 +95,19 @@ async function restApiCall<T>(endpoint: string, params?: any): Promise<T> {
   
   console.log(`[REST API] Processed endpoint: ${processedEndpoint}`);
   
-  const url = new URL(processedEndpoint, window.location.origin);
+  const origin = window.location?.origin;
+  const fallbackOrigin =
+    typeof window !== 'undefined' && window.location
+      ? `${window.location.protocol}//${window.location.hostname}${
+          window.location.port ? `:${window.location.port}` : ''
+        }`
+      : 'http://localhost';
+  const baseOrigin =
+    origin && origin !== 'null' ? origin : fallbackOrigin;
+  const url = new URL(processedEndpoint, baseOrigin);
   
   // Add remaining params as query parameters for GET requests (if no placeholders remain)
-  if (params && !processedEndpoint.includes('{')) {
+  if (method === 'GET' && params && !processedEndpoint.includes('{')) {
     Object.keys(params).forEach(key => {
       // Only add as query param if it wasn't used as a path param
       if (!endpoint.includes(`{${key}}`) && 
@@ -104,11 +121,21 @@ async function restApiCall<T>(endpoint: string, params?: any): Promise<T> {
   }
 
   try {
+    const bodyParams = method === 'POST' && params
+      ? Object.keys(params).reduce<Record<string, any>>((acc, key) => {
+          if (!usedKeys.has(key)) {
+            acc[key] = params[key];
+          }
+          return acc;
+        }, {})
+      : undefined;
+
     const response = await fetch(url.toString(), {
-      method: 'GET',
+      method,
       headers: {
         'Content-Type': 'application/json',
       },
+      body: method === 'POST' ? JSON.stringify(bodyParams ?? {}) : undefined,
     });
 
     if (!response.ok) {
@@ -156,7 +183,8 @@ export async function apiCall<T>(command: string, params?: any): Promise<T> {
   
   // Map Tauri commands to REST endpoints
   const endpoint = mapCommandToEndpoint(command, params);
-  return restApiCall<T>(endpoint, params);
+  const method = postCommands.has(command) ? 'POST' : 'GET';
+  return restApiCall<T>(endpoint, params, { method });
 }
 
 /**
@@ -257,6 +285,31 @@ function mapCommandToEndpoint(command: string, _params?: any): string {
     'slash_command_get': '/api/slash-commands/{commandId}',
     'slash_command_save': '/api/slash-commands',
     'slash_command_delete': '/api/slash-commands/{commandId}',
+
+    // CLI Tools
+    'cli_tools_list': '/api/cli-tools',
+    'cli_tools_refresh': '/api/cli-tools/refresh',
+    'cli_tool_get_installations': '/api/cli-tools/{toolType}/installations',
+    'cli_tool_set_preferred': '/api/cli-tools/{toolType}/preferred',
+    'cli_tool_get_preferred': '/api/cli-tools/{toolType}/preferred',
+    'cli_tool_is_available': '/api/cli-tools/{toolType}/available',
+    'cli_tool_get_command': '/api/cli-tools/{toolType}/command',
+    'cli_tool_list_config_files': '/api/cli-tools/{toolType}/config/files',
+    'cli_tool_read_config_file': '/api/cli-tools/{toolType}/config/file',
+    'cli_tool_write_config_file': '/api/cli-tools/{toolType}/config/file',
+    'cli_tool_get_settings': '/api/cli-tools/{toolType}/settings',
+    'cli_tool_set_setting': '/api/cli-tools/{toolType}/settings',
+    'cli_tool_list_mcp_servers': '/api/cli-tools/{toolType}/mcp',
+    'cli_tool_add_mcp_server': '/api/cli-tools/{toolType}/mcp',
+    'cli_tool_remove_mcp_server': '/api/cli-tools/{toolType}/mcp/remove',
+    'cli_tool_list_agents': '/api/cli-tools/{toolType}/agents',
+    'cli_tool_get_agent': '/api/cli-tools/{toolType}/agents/{name}',
+    'cli_tool_execute_cli_command': '/api/cli-tools/{toolType}/execute',
+    'cli_tool_get_config_dir': '/api/cli-tools/{toolType}/config-dir',
+    'cli_tool_track_usage': '/api/cli-tools/{toolType}/usage/track',
+    'cli_tool_get_usage': '/api/cli-tools/{toolType}/usage',
+    'cli_tool_get_usage_stats': '/api/cli-tools/{toolType}/usage/stats',
+    'cli_tool_clear_usage': '/api/cli-tools/{toolType}/usage/clear',
   };
 
   const endpoint = commandToEndpoint[command];
@@ -267,6 +320,17 @@ function mapCommandToEndpoint(command: string, _params?: any): string {
 
   return endpoint;
 }
+
+const postCommands = new Set<string>([
+  'cli_tool_set_preferred',
+  'cli_tool_write_config_file',
+  'cli_tool_set_setting',
+  'cli_tool_add_mcp_server',
+  'cli_tool_remove_mcp_server',
+  'cli_tool_execute_cli_command',
+  'cli_tool_track_usage',
+  'cli_tool_clear_usage',
+]);
 
 /**
  * Get environment info for debugging
@@ -294,6 +358,15 @@ async function handleStreamingCommand<T>(command: string, params?: any): Promise
     
     const ws = new WebSocket(wsUrl);
     
+    let activeSessionId: string | null = params?.sessionId || null;
+
+    const dispatchScopedEvent = (base: string, detail: any) => {
+      window.dispatchEvent(new CustomEvent(base, { detail }));
+      if (activeSessionId) {
+        window.dispatchEvent(new CustomEvent(`${base}:${activeSessionId}`, { detail }));
+      }
+    };
+
     ws.onopen = () => {
       console.log(`[TRACE] WebSocket opened successfully`);
       
@@ -332,30 +405,46 @@ async function handleStreamingCommand<T>(command: string, params?: any): Promise
               ? JSON.parse(message.content) 
               : message.content;
             console.log(`[TRACE] Parsed Claude message:`, claudeMessage);
+
+            if (
+              claudeMessage?.type === 'system' &&
+              claudeMessage?.subtype === 'init' &&
+              claudeMessage?.session_id
+            ) {
+              activeSessionId = claudeMessage.session_id;
+            }
             
-            // Simulate Tauri event for compatibility with existing UI
-            const customEvent = new CustomEvent('claude-output', {
-              detail: claudeMessage
-            });
-            console.log(`[TRACE] Dispatching claude-output event:`, customEvent.detail);
-            console.log(`[TRACE] Event type:`, customEvent.type);
-            window.dispatchEvent(customEvent);
+            dispatchScopedEvent('claude-output', claudeMessage);
           } catch (e) {
             console.error(`[TRACE] Failed to parse Claude output content:`, e);
             console.error(`[TRACE] Content that failed to parse:`, message.content);
           }
+        } else if (message.type === 'stderr') {
+          const stderrMessage = message.content || message.message || 'Unknown error';
+          console.log(`[TRACE] Stderr message:`, stderrMessage);
+          dispatchScopedEvent('claude-error', stderrMessage);
+        } else if (message.type === 'cancelled') {
+          console.log('[TRACE] Cancelled message received');
+          dispatchScopedEvent('claude-cancelled', true);
+          dispatchScopedEvent('claude-complete', false);
+          ws.close();
+          resolve({} as T);
         } else if (message.type === 'completion') {
           console.log(`[TRACE] Completion message:`, message);
+
+          const status = message.status;
+          if (status === 'cancelled') {
+            dispatchScopedEvent('claude-cancelled', true);
+            dispatchScopedEvent('claude-complete', false);
+            ws.close();
+            resolve({} as T);
+            return;
+          }
           
-          // Dispatch claude-complete event for UI state management
-          const completeEvent = new CustomEvent('claude-complete', {
-            detail: message.status === 'success'
-          });
-          console.log(`[TRACE] Dispatching claude-complete event:`, completeEvent.detail);
-          window.dispatchEvent(completeEvent);
+          dispatchScopedEvent('claude-complete', status === 'success');
           
           ws.close();
-          if (message.status === 'success') {
+          if (status === 'success') {
             console.log(`[TRACE] Resolving promise with success`);
             resolve({} as T); // Return empty object for now
           } else {
@@ -364,13 +453,7 @@ async function handleStreamingCommand<T>(command: string, params?: any): Promise
           }
         } else if (message.type === 'error') {
           console.log(`[TRACE] Error message:`, message);
-          
-          // Dispatch claude-error event for UI error handling
-          const errorEvent = new CustomEvent('claude-error', {
-            detail: message.message || 'Unknown error'
-          });
-          console.log(`[TRACE] Dispatching claude-error event:`, errorEvent.detail);
-          window.dispatchEvent(errorEvent);
+          dispatchScopedEvent('claude-error', message.message || 'Unknown error');
           
           reject(new Error(message.message || 'Unknown error'));
         } else {
@@ -385,12 +468,7 @@ async function handleStreamingCommand<T>(command: string, params?: any): Promise
     ws.onerror = (error) => {
       console.error('[TRACE] WebSocket error:', error);
       
-      // Dispatch claude-error event for connection errors
-      const errorEvent = new CustomEvent('claude-error', {
-        detail: 'WebSocket connection failed'
-      });
-      console.log(`[TRACE] Dispatching claude-error event for WebSocket error`);
-      window.dispatchEvent(errorEvent);
+      dispatchScopedEvent('claude-error', 'WebSocket connection failed');
       
       reject(new Error('WebSocket connection failed'));
     };
@@ -400,11 +478,7 @@ async function handleStreamingCommand<T>(command: string, params?: any): Promise
       
       // If connection closed unexpectedly (not a normal close), dispatch cancelled event
       if (event.code !== 1000 && event.code !== 1001) {
-        const cancelEvent = new CustomEvent('claude-complete', {
-          detail: false // false indicates cancellation/failure
-        });
-        console.log(`[TRACE] Dispatching claude-complete event for unexpected close`);
-        window.dispatchEvent(cancelEvent);
+        dispatchScopedEvent('claude-complete', false);
       }
     };
   });

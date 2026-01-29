@@ -14,10 +14,10 @@
     "windows": [
       {
         "title": "opcode",
-        "width": 1280,
-        "height": 800,
-        "minWidth": 800,
-        "minHeight": 600,
+        "width": 1600,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 768,
         "decorations": false,
         "transparent": true,
         "shadow": true,

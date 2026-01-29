@@ -61,6 +61,7 @@ pub enum ConfigFileType {
     Markdown,
 }
 
+#[allow(dead_code)]
 impl ConfigFileType {
     /// Get file type from extension
     pub fn from_extension(ext: &str) -> Option<Self> {
@@ -75,6 +76,7 @@ impl ConfigFileType {
     }
 
     /// Get the typical file extension for this type
+    #[allow(dead_code)]
     pub fn extension(&self) -> &'static str {
         match self {
             ConfigFileType::Json => "json",

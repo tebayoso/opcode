@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Minus, Square, X, Bot, BarChart3, FileText, Network, Info, MoreVertical, Terminal } from 'lucide-react';
+import { Settings, Minus, Square, X, Bot, BarChart3, FileText, Network, Info, MoreVertical, Terminal, LayoutDashboard } from 'lucide-react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { TooltipProvider, TooltipSimple } from '@/components/ui/tooltip-modern';
 
@@ -11,6 +11,7 @@ interface CustomTitlebarProps {
   onClaudeClick?: () => void;
   onMCPClick?: () => void;
   onCLIToolsClick?: () => void;
+  onControlCenterClick?: () => void;
   onInfoClick?: () => void;
 }
 
@@ -21,6 +22,7 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
   onClaudeClick,
   onMCPClick,
   onCLIToolsClick,
+  onControlCenterClick,
   onInfoClick
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -141,6 +143,19 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
       <div className="flex items-center pr-5 gap-3 tauri-no-drag">
         {/* Primary actions group */}
         <div className="flex items-center gap-1">
+          {onControlCenterClick && (
+            <TooltipSimple content="Control Center" side="bottom">
+              <motion.button
+                onClick={onControlCenterClick}
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: 0.15 }}
+                className="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors tauri-no-drag"
+              >
+                <LayoutDashboard size={16} />
+              </motion.button>
+            </TooltipSimple>
+          )}
+
           {onAgentsClick && (
             <TooltipSimple content="Agents" side="bottom">
               <motion.button
@@ -153,7 +168,7 @@ export const CustomTitlebar: React.FC<CustomTitlebarProps> = ({
               </motion.button>
             </TooltipSimple>
           )}
-          
+
           {onUsageClick && (
             <TooltipSimple content="Usage Dashboard" side="bottom">
               <motion.button

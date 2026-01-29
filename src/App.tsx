@@ -48,7 +48,7 @@ type View =
  */
 function AppContent() {
   const [view, setView] = useState<View>("tabs");
-  const { createClaudeMdTab, createSettingsTab, createUsageTab, createMCPTab, createAgentsTab, createCLIToolsTab } = useTabState();
+  const { createClaudeMdTab, createSettingsTab, createUsageTab, createMCPTab, createAgentsTab, createCLIToolsTab, createControlCenterTab } = useTabState();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -379,6 +379,7 @@ function AppContent() {
     <div className="h-screen flex flex-col">
       {/* Custom Titlebar */}
       <CustomTitlebar
+        onControlCenterClick={() => createControlCenterTab()}
         onAgentsClick={() => createAgentsTab()}
         onUsageClick={() => createUsageTab()}
         onClaudeClick={() => createClaudeMdTab()}

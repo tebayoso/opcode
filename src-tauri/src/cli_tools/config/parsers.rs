@@ -9,6 +9,7 @@ use std::path::Path;
 
 /// Error type for parsing operations
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum ParseError {
     /// JSON parse error
     Json(String),
@@ -55,6 +56,7 @@ impl ConfigParser {
     }
 
     /// Parse content from file path (auto-detect format)
+    #[allow(dead_code)]
     pub fn parse_from_path(content: &str, path: &Path) -> Result<Value, ParseError> {
         let ext = path
             .extension()

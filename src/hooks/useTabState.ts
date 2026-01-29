@@ -26,6 +26,7 @@ interface UseTabStateReturn {
   createImportAgentTab: () => string;
   createMemoriesTab: (projectPath?: string) => string;
   createCLIToolsTab: () => string | null;
+  createControlCenterTab: () => string | null;
   closeTab: (id: string, force?: boolean) => Promise<boolean>;
   closeCurrentTab: () => Promise<boolean>;
   switchToTab: (id: string) => void;
@@ -291,6 +292,23 @@ export const useTabState = (): UseTabStateReturn => {
     });
   }, [addTab, tabs, setActiveTab]);
 
+  const createControlCenterTab = useCallback((): string | null => {
+    // Check if control center tab already exists (singleton)
+    const existingTab = tabs.find(tab => tab.type === 'control-center');
+    if (existingTab) {
+      setActiveTab(existingTab.id);
+      return existingTab.id;
+    }
+
+    return addTab({
+      type: 'control-center',
+      title: 'Control Center',
+      status: 'idle',
+      hasUnsavedChanges: false,
+      icon: 'layout-dashboard'
+    });
+  }, [addTab, tabs, setActiveTab]);
+
   const closeTab = useCallback(async (id: string, force = false): Promise<boolean> => {
     const tab = getTabById(id);
     if (!tab) {return true;}
@@ -379,6 +397,7 @@ export const useTabState = (): UseTabStateReturn => {
     createImportAgentTab,
     createMemoriesTab,
     createCLIToolsTab,
+    createControlCenterTab,
     closeTab,
     closeCurrentTab,
     switchToTab: setActiveTab,

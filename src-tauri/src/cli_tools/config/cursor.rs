@@ -510,7 +510,6 @@ impl CursorConfig {
 
         let mut description = None;
         let mut tools = Vec::new();
-        let mut system_prompt = None;
 
         if let Some(fm) = parsed.get("frontmatter").and_then(|v| v.as_object()) {
             description = fm.get("description").and_then(|v| v.as_str()).map(String::from);
@@ -522,7 +521,7 @@ impl CursorConfig {
             }
         }
 
-        system_prompt = parsed
+        let system_prompt = parsed
             .get("body")
             .and_then(|v| v.as_str())
             .map(String::from);

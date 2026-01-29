@@ -11,7 +11,7 @@ pub fn detect_tool_installations(tool_type: &CLIToolType) -> CLIToolWithStatus {
     info!("Detecting installations for {:?}", tool_type);
 
     let definition = get_tool_definition(tool_type);
-    let mut status = CLIToolWithStatus::new(tool_type.clone());
+    let mut status = CLIToolWithStatus::new(tool_type.clone(), definition.capabilities.clone());
     let mut seen_paths: HashSet<String> = HashSet::new();
 
     // 1. Try which/where command for each binary name

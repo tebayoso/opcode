@@ -316,7 +316,6 @@ impl CopilotConfig {
         let mut description = None;
         let mut model = None;
         let mut tools = Vec::new();
-        let mut system_prompt = None;
 
         if let Some(fm) = parsed.get("frontmatter").and_then(|v| v.as_object()) {
             description = fm.get("description").and_then(|v| v.as_str()).map(String::from);
@@ -329,7 +328,7 @@ impl CopilotConfig {
             }
         }
 
-        system_prompt = parsed
+        let system_prompt = parsed
             .get("body")
             .and_then(|v| v.as_str())
             .map(String::from);

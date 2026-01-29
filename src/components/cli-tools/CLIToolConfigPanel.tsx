@@ -3,7 +3,7 @@
  * Main config panel with tabs for each configuration section
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText,
@@ -46,7 +46,6 @@ export function CLIToolConfigPanel({
   isExpanded,
   onToggle,
 }: CLIToolConfigPanelProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
   const toolType = tool.tool_type as CLIToolType;
 
   const {
@@ -65,6 +64,65 @@ export function CLIToolConfigPanel({
   const isLoadingMCP = loading.mcpServers[toolType] || false;
   const isLoadingAgents = loading.agents[toolType] || false;
 
+  const tabs = useMemo(() => {
+    const availableTabs: TabConfig[] = [
+      { id: 'overview', label: 'Overview', icon: <FolderOpen className="h-4 w-4" /> },
+    ];
+
+    if (tool.capabilities.files) {
+      availableTabs.push({
+        id: 'files',
+        label: 'Files',
+        icon: <FileText className="h-4 w-4" />,
+        badge: toolConfig?.files?.length,
+      });
+    }
+    if (tool.capabilities.settings) {
+      availableTabs.push({ id: 'settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> });
+    }
+    if (tool.capabilities.mcp_servers) {
+      availableTabs.push({
+        id: 'mcp',
+        label: 'MCP Servers',
+        icon: <Server className="h-4 w-4" />,
+        badge: toolConfig?.mcpServers?.length,
+      });
+    }
+    if (tool.capabilities.agents) {
+      availableTabs.push({
+        id: 'agents',
+        label: 'Agents',
+        icon: <Bot className="h-4 w-4" />,
+        badge: toolConfig?.agents?.length,
+      });
+    }
+    if (tool.capabilities.usage) {
+      availableTabs.push({
+        id: 'usage',
+        label: 'Usage',
+        icon: <Activity className="h-4 w-4" />,
+        badge: toolConfig?.usageStats?.total_actions,
+      });
+    }
+
+    return availableTabs;
+  }, [
+    tool.capabilities,
+    toolConfig?.files?.length,
+    toolConfig?.mcpServers?.length,
+    toolConfig?.agents?.length,
+    toolConfig?.usageStats?.total_actions,
+  ]);
+
+  const [activeTab, setActiveTab] = useState<TabId>(tabs[0].id);
+
+  // Effect to reset active tab if current tab becomes unavailable
+  useEffect(() => {
+    if (!tabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(tabs[0].id);
+    }
+  }, [tabs, activeTab]);
+
   // Load config dir when panel expands
   useEffect(() => {
     if (isExpanded && tool.is_installed && !toolConfig?.configDir) {
@@ -78,24 +136,26 @@ export function CLIToolConfigPanel({
 
     switch (activeTab) {
       case 'files':
-        if (!toolConfig?.files) {
+        if (tool.capabilities.files && !toolConfig?.files) {
           loadConfigFiles(toolType);
         }
         break;
       case 'settings':
-        if (!toolConfig?.settings) {
+        if (tool.capabilities.settings && !toolConfig?.settings) {
           loadSettings(toolType);
         }
         break;
       case 'mcp':
-        if (!toolConfig?.mcpServers) {
+        if (tool.capabilities.mcp_servers && !toolConfig?.mcpServers) {
           loadMCPServers(toolType);
         }
         break;
       case 'agents':
-        if (!toolConfig?.agents) {
+        if (tool.capabilities.agents && !toolConfig?.agents) {
           loadAgents(toolType);
         }
+        break;
+      case 'usage':
         break;
     }
   }, [
@@ -108,36 +168,12 @@ export function CLIToolConfigPanel({
     loadSettings,
     loadMCPServers,
     loadAgents,
+    tool.capabilities.files,
+    tool.capabilities.settings,
+    tool.capabilities.mcp_servers,
+    tool.capabilities.agents,
+    tool.capabilities.usage,
   ]);
-
-  const tabs: TabConfig[] = [
-    { id: 'overview', label: 'Overview', icon: <FolderOpen className="h-4 w-4" /> },
-    {
-      id: 'files',
-      label: 'Files',
-      icon: <FileText className="h-4 w-4" />,
-      badge: toolConfig?.files?.length,
-    },
-    { id: 'settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> },
-    {
-      id: 'mcp',
-      label: 'MCP Servers',
-      icon: <Server className="h-4 w-4" />,
-      badge: toolConfig?.mcpServers?.length,
-    },
-    {
-      id: 'agents',
-      label: 'Agents',
-      icon: <Bot className="h-4 w-4" />,
-      badge: toolConfig?.agents?.length,
-    },
-    {
-      id: 'usage',
-      label: 'Usage',
-      icon: <Activity className="h-4 w-4" />,
-      badge: toolConfig?.usageStats?.total_actions,
-    },
-  ];
 
   if (!tool.is_installed) {
     return null;
@@ -178,7 +214,13 @@ export function CLIToolConfigPanel({
                 onValueChange={(v) => setActiveTab(v as TabId)}
                 className="w-full"
               >
-                <TabsList className="w-full grid grid-cols-6 h-8">
+                <TabsList
+                  className="w-full h-8"
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
+                  }}
+                >
                   {tabs.map((tab) => (
                     <TabsTrigger
                       key={tab.id}
@@ -201,54 +243,58 @@ export function CLIToolConfigPanel({
                     <OverviewTab tool={tool} configDir={toolConfig?.configDir} />
                   </TabsContent>
 
-                  <TabsContent value="files" className="mt-0">
-                    {isLoadingFiles ? (
-                      <LoadingState message="Loading config files..." />
-                    ) : (
-                      <ConfigFilesTab
-                        toolType={toolType}
-                        files={toolConfig?.files || []}
-                        loadedFiles={toolConfig?.loadedFiles || {}}
-                      />
-                    )}
-                  </TabsContent>
+                  {tool.capabilities.files && (
+                    <TabsContent value="files" className="mt-0">
+                      {isLoadingFiles ? (
+                        <LoadingState message="Loading config files..." />
+                      ) : (
+                        <ConfigFilesTab
+                          toolType={toolType}
+                          files={toolConfig?.files || []}
+                          loadedFiles={toolConfig?.loadedFiles || {}}
+                        />
+                      )}
+                    </TabsContent>
+                  )}
 
-                  <TabsContent value="settings" className="mt-0">
-                    {isLoadingSettings ? (
-                      <LoadingState message="Loading settings..." />
-                    ) : (
-                      <SettingsTab
-                        toolType={toolType}
-                        settings={toolConfig?.settings}
-                      />
-                    )}
-                  </TabsContent>
+                  {tool.capabilities.settings && (
+                    <TabsContent value="settings" className="mt-0">
+                      {isLoadingSettings ? (
+                        <LoadingState message="Loading settings..." />
+                      ) : (
+                        <SettingsTab toolType={toolType} settings={toolConfig?.settings} />
+                      )}
+                    </TabsContent>
+                  )}
 
-                  <TabsContent value="mcp" className="mt-0">
-                    {isLoadingMCP ? (
-                      <LoadingState message="Loading MCP servers..." />
-                    ) : (
-                      <MCPServersTab
-                        toolType={toolType}
-                        servers={toolConfig?.mcpServers || []}
-                      />
-                    )}
-                  </TabsContent>
+                  {tool.capabilities.mcp_servers && (
+                    <TabsContent value="mcp" className="mt-0">
+                      {isLoadingMCP ? (
+                        <LoadingState message="Loading MCP servers..." />
+                      ) : (
+                        <MCPServersTab
+                          toolType={toolType}
+                          servers={toolConfig?.mcpServers || []}
+                        />
+                      )}
+                    </TabsContent>
+                  )}
 
-                  <TabsContent value="agents" className="mt-0">
-                    {isLoadingAgents ? (
-                      <LoadingState message="Loading agents..." />
-                    ) : (
-                      <AgentsTab
-                        toolType={toolType}
-                        agents={toolConfig?.agents || []}
-                      />
-                    )}
-                  </TabsContent>
+                  {tool.capabilities.agents && (
+                    <TabsContent value="agents" className="mt-0">
+                      {isLoadingAgents ? (
+                        <LoadingState message="Loading agents..." />
+                      ) : (
+                        <AgentsTab toolType={toolType} agents={toolConfig?.agents || []} />
+                      )}
+                    </TabsContent>
+                  )}
 
-                  <TabsContent value="usage" className="mt-0">
-                    <UsageTab toolType={toolType} />
-                  </TabsContent>
+                  {tool.capabilities.usage && (
+                    <TabsContent value="usage" className="mt-0">
+                      <UsageTab toolType={toolType} />
+                    </TabsContent>
+                  )}
                 </div>
               </Tabs>
             </div>

@@ -14,7 +14,9 @@ pub mod copilot;
 pub mod cursor;
 pub mod gemini;
 pub mod opencode;
+pub mod noop;
 
+#[allow(unused_imports)]
 pub use parsers::{ConfigParser, ParseError};
 pub use traits::{
     AgentDefinition, CLIToolConfig, CommandOutput, ConfigError, ConfigFileContent, ConfigFileInfo,
@@ -34,5 +36,7 @@ pub fn get_config_handler(tool_type: &CLIToolType) -> Arc<dyn CLIToolConfig> {
         CLIToolType::OpenCode => Arc::new(opencode::OpenCodeConfig::new()),
         CLIToolType::GitHubCopilot => Arc::new(copilot::CopilotConfig::new()),
         CLIToolType::Cursor => Arc::new(cursor::CursorConfig::new()),
+        CLIToolType::ESLint => Arc::new(noop::NoopConfig::new(CLIToolType::ESLint)),
+        CLIToolType::Vite => Arc::new(noop::NoopConfig::new(CLIToolType::Vite)),
     }
 }

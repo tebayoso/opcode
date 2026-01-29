@@ -37,6 +37,10 @@ use commands::mcp::{
     mcp_serve, mcp_test_connection,
 };
 
+use commands::file_ops::{
+    file_ops_bulk, file_ops_clone_agent, file_ops_clone_skill, file_ops_copy, file_ops_delete,
+    file_ops_merge_markdown, file_ops_move, file_ops_preview_merge,
+};
 use commands::proxy::{apply_proxy_settings, get_proxy_settings, save_proxy_settings};
 use commands::storage::{
     storage_delete_row, storage_execute_sql, storage_insert_row, storage_list_tables,
@@ -310,6 +314,15 @@ fn main() {
             // Proxy Settings
             get_proxy_settings,
             save_proxy_settings,
+            // File Operations
+            file_ops_copy,
+            file_ops_move,
+            file_ops_preview_merge,
+            file_ops_merge_markdown,
+            file_ops_bulk,
+            file_ops_clone_skill,
+            file_ops_clone_agent,
+            file_ops_delete,
             // Plugins
             commands::plugins::plugins_list_marketplaces,
             commands::plugins::plugins_add_marketplace,

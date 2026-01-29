@@ -224,6 +224,7 @@ fn read_plugin_manifest(plugin_path: &Path) -> Option<PluginManifest> {
 
 /// Known marketplace entry from known_marketplaces.json
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct KnownMarketplaceEntry {
     source: KnownMarketplaceSource,
     #[serde(rename = "installLocation")]
@@ -233,6 +234,7 @@ struct KnownMarketplaceEntry {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct KnownMarketplaceSource {
     source: String,
     repo: Option<String>,
@@ -753,6 +755,7 @@ pub async fn plugins_fetch_marketplace(marketplace_name: String) -> Result<Vec<P
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct GitHubContent {
     name: String,
     path: String,

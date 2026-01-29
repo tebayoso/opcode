@@ -213,15 +213,12 @@ pub async fn get_agent_run_with_metrics(run: AgentRun) -> AgentRunWithMetrics {
     }
 }
 
-/// Initialize the agents database
-pub fn init_database(app: &AppHandle) -> SqliteResult<Connection> {
-    let app_dir = app
-        .path()
-        .app_data_dir()
-        .expect("Failed to get app data dir");
-    std::fs::create_dir_all(&app_dir).expect("Failed to create app data dir");
+/// Initialize the agents database at a given path
+pub fn init_database_at_path(db_path: std::path::PathBuf) -> SqliteResult<Connection> {
+    if let Some(parent) = db_path.parent() {
+        std::fs::create_dir_all(parent).expect("Failed to create app data dir");
+    }
 
-    let db_path = app_dir.join("agents.db");
     let conn = Connection::open(db_path)?;
 
     // Create agents table
@@ -389,6 +386,17 @@ pub fn init_database(app: &AppHandle) -> SqliteResult<Connection> {
     )?;
 
     Ok(conn)
+}
+
+/// Initialize the agents database
+pub fn init_database(app: &AppHandle) -> SqliteResult<Connection> {
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .expect("Failed to get app data dir");
+
+    let db_path = app_dir.join("agents.db");
+    init_database_at_path(db_path)
 }
 
 /// List all agents

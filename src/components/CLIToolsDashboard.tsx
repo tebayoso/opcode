@@ -27,7 +27,7 @@ import type {
   CLIToolInstallation,
   CLIToolType,
 } from '@/types/cli-tools';
-import { CLI_TOOL_DISPLAY, INSTALLATION_SOURCE_DISPLAY } from '@/types/cli-tools';
+import { resolveCLIToolDisplay, INSTALLATION_SOURCE_DISPLAY } from '@/types/cli-tools';
 import { CLIToolConfigPanel } from '@/components/cli-tools';
 
 interface ToolCardProps {
@@ -39,7 +39,7 @@ const ToolCard: React.FC<ToolCardProps> = ({ tool, onSetPreferred }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isConfigExpanded, setIsConfigExpanded] = useState(false);
   const [isSettingPreferred, setIsSettingPreferred] = useState(false);
-  const display = CLI_TOOL_DISPLAY[tool.tool_type];
+  const display = resolveCLIToolDisplay(tool.tool_type, tool.name);
 
   const handleSetPreferred = async (installation: CLIToolInstallation) => {
     if (isSettingPreferred) return;

@@ -15,6 +15,12 @@ import type {
   CLIToolUsageStats,
   UsageAction,
 } from '@/types/cli-tools';
+import type {
+  OperationResult as FileOperationResult,
+  MergeOptions,
+  MergePreview,
+  FileOperation,
+} from '@/types/file-ops';
 
 /** Process type for tracking in ProcessRegistry */
 export type ProcessType = 
@@ -2639,7 +2645,7 @@ export const api = {
    */
   async addCLIToolMCPServer(toolType: CLIToolType, config: MCPServerInput): Promise<void> {
     try {
-      await apiCall("cli_tool_add_mcp_server", { toolType, config });
+      await apiCall("cli_tool_add_mcp_server", { toolType, ...config });
     } catch (error) {
       console.error("Failed to add CLI tool MCP server:", error);
       throw error;
@@ -2784,6 +2790,134 @@ export const api = {
       await apiCall("cli_tool_clear_usage", { toolType });
     } catch (error) {
       console.error("Failed to clear CLI tool usage:", error);
+      throw error;
+    }
+  },
+
+  // =========================================
+  // File Operations API
+  // =========================================
+
+  /**
+   * Copies a file or directory
+   * @param source - Source path
+   * @param destination - Destination path
+   * @param overwrite - Whether to overwrite existing files
+   * @returns Promise resolving to operation result
+   */
+  async fileOpsCopy(source: string, destination: string, overwrite: boolean = false): Promise<FileOperationResult> {
+    try {
+      return await apiCall<FileOperationResult>("file_ops_copy", { source, destination, overwrite });
+    } catch (error) {
+      console.error("Failed to copy file:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Moves a file or directory
+   * @param source - Source path
+   * @param destination - Destination path
+   * @param overwrite - Whether to overwrite existing files
+   * @returns Promise resolving to operation result
+   */
+  async fileOpsMove(source: string, destination: string, overwrite: boolean = false): Promise<FileOperationResult> {
+    try {
+      return await apiCall<FileOperationResult>("file_ops_move", { source, destination, overwrite });
+    } catch (error) {
+      console.error("Failed to move file:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Deletes a file or directory
+   * @param path - Path to delete
+   * @param createBackup - Whether to create a backup before deleting
+   * @returns Promise resolving to operation result
+   */
+  async fileOpsDelete(path: string, createBackup: boolean = true): Promise<FileOperationResult> {
+    try {
+      return await apiCall<FileOperationResult>("file_ops_delete", { path, createBackup });
+    } catch (error) {
+      console.error("Failed to delete file:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Previews a markdown merge operation
+   * @param source - Source file path
+   * @param target - Target file path
+   * @param options - Merge options
+   * @returns Promise resolving to merge preview
+   */
+  async fileOpsPreviewMerge(source: string, target: string, options?: MergeOptions): Promise<MergePreview> {
+    try {
+      return await apiCall<MergePreview>("file_ops_preview_merge", { source, target, options });
+    } catch (error) {
+      console.error("Failed to preview merge:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Merges two markdown files
+   * @param source - Source file path
+   * @param target - Target file path
+   * @param options - Merge options
+   * @returns Promise resolving to operation result
+   */
+  async fileOpsMergeMarkdown(source: string, target: string, options?: MergeOptions): Promise<FileOperationResult> {
+    try {
+      return await apiCall<FileOperationResult>("file_ops_merge_markdown", { source, target, options });
+    } catch (error) {
+      console.error("Failed to merge markdown files:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Executes bulk file operations
+   * @param operations - Array of file operations
+   * @param stopOnError - Whether to stop on first error
+   * @returns Promise resolving to array of operation results
+   */
+  async fileOpsBulk(operations: FileOperation[], stopOnError: boolean = false): Promise<FileOperationResult[]> {
+    try {
+      return await apiCall<FileOperationResult[]>("file_ops_bulk", { operations, stopOnError });
+    } catch (error) {
+      console.error("Failed to execute bulk file operations:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Clones a skill to a new name
+   * @param skillName - Name of the skill to clone
+   * @param newName - New name for the cloned skill
+   * @returns Promise resolving to operation result
+   */
+  async fileOpsCloneSkill(skillName: string, newName: string): Promise<FileOperationResult> {
+    try {
+      return await apiCall<FileOperationResult>("file_ops_clone_skill", { skillName, newName });
+    } catch (error) {
+      console.error("Failed to clone skill:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Clones an agent to a new name
+   * @param agentId - ID of the agent to clone
+   * @param newName - New name for the cloned agent
+   * @returns Promise resolving to operation result
+   */
+  async fileOpsCloneAgent(agentId: number, newName: string): Promise<FileOperationResult> {
+    try {
+      return await apiCall<FileOperationResult>("file_ops_clone_agent", { agentId, newName });
+    } catch (error) {
+      console.error("Failed to clone agent:", error);
       throw error;
     }
   },

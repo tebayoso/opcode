@@ -909,7 +909,6 @@ impl OpenCodeConfig {
         let mut description = None;
         let mut model = None;
         let mut tools = Vec::new();
-        let mut system_prompt = None;
 
         // Parse frontmatter if present
         // OpenCode uses: name, description, allowed-tools (with hyphen)
@@ -956,7 +955,7 @@ impl OpenCodeConfig {
         }
 
         // Body becomes the system prompt
-        system_prompt = parsed
+        let system_prompt = parsed
             .get("body")
             .and_then(|v| v.as_str())
             .map(String::from);

@@ -11,7 +11,9 @@ export type CLIToolType =
   | 'codex'
   | 'opencode'
   | 'github_copilot'
-  | 'cursor';
+  | 'cursor'
+  | 'eslint'
+  | 'vite';
 
 /**
  * Source of installation discovery
@@ -48,6 +50,14 @@ export interface CLIToolInstallation {
   source_detail: string | null;
 }
 
+export interface CLIToolCapabilities {
+  files: boolean;
+  settings: boolean;
+  mcp_servers: boolean;
+  agents: boolean;
+  usage: boolean;
+}
+
 /**
  * A CLI tool with its installation status
  */
@@ -68,6 +78,8 @@ export interface CLIToolWithStatus {
   installations: CLIToolInstallation[];
   /** The preferred installation (if set) */
   preferred_installation: CLIToolInstallation | null;
+  /** Supported capabilities exposed by the tool */
+  capabilities: CLIToolCapabilities;
 }
 
 /**
@@ -117,7 +129,35 @@ export const CLI_TOOL_DISPLAY: Record<
     icon: '🖱️',
     color: 'text-indigo-500',
   },
+  eslint: {
+    name: 'ESLint',
+    icon: '✅',
+    color: 'text-amber-500',
+  },
+  vite: {
+    name: 'Vite',
+    icon: '⚡',
+    color: 'text-yellow-500',
+  },
 };
+
+const UNKNOWN_CLI_DISPLAY = {
+  name: 'Unknown CLI',
+  icon: '🧭',
+  color: 'text-muted-foreground',
+};
+
+export function resolveCLIToolDisplay(toolType: string, fallbackName?: string) {
+  const display = CLI_TOOL_DISPLAY[toolType as CLIToolType];
+  if (display) {
+    return display;
+  }
+
+  return {
+    ...UNKNOWN_CLI_DISPLAY,
+    name: fallbackName ?? UNKNOWN_CLI_DISPLAY.name,
+  };
+}
 
 /**
  * Display metadata for installation sources

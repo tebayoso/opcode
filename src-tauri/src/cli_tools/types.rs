@@ -12,6 +12,8 @@ pub enum CLIToolType {
     #[serde(rename = "github_copilot")]
     GitHubCopilot,
     Cursor,
+    ESLint,
+    Vite,
 }
 
 impl CLIToolType {
@@ -23,6 +25,8 @@ impl CLIToolType {
             CLIToolType::OpenCode,
             CLIToolType::GitHubCopilot,
             CLIToolType::Cursor,
+            CLIToolType::ESLint,
+            CLIToolType::Vite,
         ]
     }
 
@@ -34,6 +38,8 @@ impl CLIToolType {
             CLIToolType::OpenCode => "OpenCode",
             CLIToolType::GitHubCopilot => "GitHub Copilot CLI",
             CLIToolType::Cursor => "Cursor CLI",
+            CLIToolType::ESLint => "ESLint",
+            CLIToolType::Vite => "Vite",
         }
     }
 
@@ -45,6 +51,8 @@ impl CLIToolType {
             CLIToolType::OpenCode => "Open-source AI coding assistant",
             CLIToolType::GitHubCopilot => "GitHub's AI pair programmer in the terminal",
             CLIToolType::Cursor => "Cursor's AI coding agent",
+            CLIToolType::ESLint => "Pluggable and configurable linter tool for identifying and reporting on patterns in JavaScript.",
+            CLIToolType::Vite => "Next Generation Frontend Tooling.",
         }
     }
 
@@ -56,6 +64,8 @@ impl CLIToolType {
             CLIToolType::OpenCode => "https://github.com/opencode-ai/opencode",
             CLIToolType::GitHubCopilot => "https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line",
             CLIToolType::Cursor => "https://cursor.com",
+            CLIToolType::ESLint => "https://eslint.org/",
+            CLIToolType::Vite => "https://vitejs.dev/",
         }
     }
 
@@ -67,6 +77,8 @@ impl CLIToolType {
             CLIToolType::OpenCode => "curl -fsSL https://opencode.ai/install.sh | bash",
             CLIToolType::GitHubCopilot => "gh extension install github/gh-copilot",
             CLIToolType::Cursor => "Download from cursor.com and install Cursor app",
+            CLIToolType::ESLint => "npm install -g eslint",
+            CLIToolType::Vite => "npm install -g vite",
         }
     }
 
@@ -108,6 +120,7 @@ pub enum InstallationSource {
 }
 
 impl InstallationSource {
+    #[allow(dead_code)]
     pub fn display_name(&self) -> &'static str {
         match self {
             InstallationSource::System => "System",
@@ -162,11 +175,23 @@ pub struct DetectionConfig {
     pub version_pattern: Option<&'static str>,
 }
 
+/// Capabilities of a CLI tool
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CLIToolCapabilities {
+    pub files: bool,
+    pub settings: bool,
+    pub mcp_servers: bool,
+    pub agents: bool,
+    pub usage: bool,
+}
+
 /// Tool definition with display info and detection config
 #[derive(Debug, Clone)]
 pub struct CLIToolDefinition {
+    #[allow(dead_code)]
     pub tool_type: CLIToolType,
     pub detection: DetectionConfig,
+    pub capabilities: CLIToolCapabilities,
 }
 
 /// Status of all CLI tools
@@ -197,10 +222,12 @@ pub struct CLIToolWithStatus {
     pub installations: Vec<CLIToolInstallation>,
     /// The preferred installation (if set)
     pub preferred_installation: Option<CLIToolInstallation>,
+    /// Capabilities of the tool
+    pub capabilities: CLIToolCapabilities,
 }
 
 impl CLIToolWithStatus {
-    pub fn new(tool_type: CLIToolType) -> Self {
+    pub fn new(tool_type: CLIToolType, capabilities: CLIToolCapabilities) -> Self {
         Self {
             name: tool_type.display_name().to_string(),
             description: tool_type.description().to_string(),
@@ -210,6 +237,7 @@ impl CLIToolWithStatus {
             is_installed: false,
             installations: Vec::new(),
             preferred_installation: None,
+            capabilities,
         }
     }
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 import type { StateCreator } from 'zustand';
 import { api } from '@/lib/api';
 import type {
@@ -155,9 +156,12 @@ export const useCLIToolsStore = create<CLIToolsState>()(
 );
 
 // Selector hooks for common use cases
-export const useCLIToolsStatus = () => useCLIToolsStore((state) => state.status);
+// Using useShallow for selectors that return arrays/objects to prevent infinite re-renders
+export const useCLIToolsStatus = () => useCLIToolsStore(
+  useShallow((state) => state.status)
+);
 export const useCLIToolsLoading = () => useCLIToolsStore((state) => state.isLoading || state.isRefreshing);
 export const useCLIToolsError = () => useCLIToolsStore((state) => state.error);
-export const useInstalledTools = () => useCLIToolsStore((state) =>
-  state.status?.tools.filter((tool) => tool.is_installed) || []
+export const useCLIToolsInstalledTools = () => useCLIToolsStore(
+  useShallow((state) => state.status?.tools.filter((tool) => tool.is_installed) || [])
 );

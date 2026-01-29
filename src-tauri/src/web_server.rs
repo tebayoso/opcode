@@ -3,14 +3,16 @@ use axum::http::Method;
 use axum::{
     extract::{Path, State as AxumState, WebSocketUpgrade},
     response::{Html, Json, Response},
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use chrono;
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::Mutex;
@@ -19,6 +21,7 @@ use tower_http::services::ServeDir;
 use which;
 
 use crate::commands;
+use crate::cli_tools;
 
 // Find Claude binary for web mode - use bundled binary first
 fn find_claude_binary_web() -> Result<String, String> {
@@ -59,11 +62,35 @@ fn find_claude_binary_web() -> Result<String, String> {
     Err("Claude binary not found in bundled location or system paths".to_string())
 }
 
+fn web_data_dir() -> Result<PathBuf, String> {
+    if let Some(base_dir) = dirs::data_dir() {
+        Ok(base_dir.join("opcode"))
+    } else {
+        Err("Failed to determine data directory".to_string())
+    }
+}
+
+fn open_web_db() -> Result<rusqlite::Connection, String> {
+    let db_path = web_data_dir()?.join("agents.db");
+    crate::commands::agents::init_database_at_path(db_path).map_err(|e| e.to_string())
+}
+
 #[derive(Clone)]
 pub struct AppState {
     // Track active WebSocket sessions for Claude execution
     pub active_sessions:
         Arc<Mutex<std::collections::HashMap<String, tokio::sync::mpsc::Sender<String>>>>,
+    // Track active Claude processes by internal session key
+    pub active_processes:
+        Arc<Mutex<HashMap<String, Arc<tokio::sync::Mutex<tokio::process::Child>>>>>,
+    // Map Claude session IDs to internal session keys
+    pub session_map: Arc<Mutex<HashMap<String, String>>>,
+    // Track cancelled sessions to avoid double-completion
+    pub cancelled_sessions: Arc<Mutex<HashSet<String>>>,
+    // Track process metadata for running sessions
+    pub process_info: Arc<Mutex<HashMap<String, crate::process::ProcessInfo>>>,
+    // Auto-incrementing run ID for process info
+    pub next_run_id: Arc<Mutex<i64>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -201,6 +228,557 @@ async fn mcp_list() -> Json<ApiResponse<Vec<serde_json::Value>>> {
     Json(ApiResponse::success(vec![]))
 }
 
+// =============================================================================
+// CLI Tools (Web)
+// =============================================================================
+
+#[derive(Deserialize)]
+struct SetPreferredPayload {
+    path: String,
+}
+
+#[derive(Deserialize)]
+struct ConfigFilePayload {
+    path: String,
+    content: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct SetSettingPayload {
+    key: String,
+    value: serde_json::Value,
+}
+
+#[derive(Deserialize)]
+struct ExecuteCommandPayload {
+    command: String,
+    #[serde(default)]
+    args: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct UsageTrackPayload {
+    action: String,
+    details: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct UsageQuery {
+    limit: Option<i64>,
+}
+
+#[derive(Deserialize)]
+struct RemoveMcpPayload {
+    name: String,
+}
+
+fn parse_tool_type(tool_type: &str) -> Result<cli_tools::CLIToolType, String> {
+    cli_tools::CLIToolType::from_db_string(tool_type)
+        .ok_or_else(|| format!("Invalid tool type: {}", tool_type))
+}
+
+async fn cli_tools_list() -> Json<ApiResponse<cli_tools::CLIToolsStatus>> {
+    let mut tools = cli_tools::detect_all_tools();
+    let conn = match open_web_db() {
+        Ok(conn) => conn,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let mut tools_with_prefs: Vec<cli_tools::CLIToolWithStatus> = Vec::new();
+    for mut tool in tools.drain(..) {
+        if let Ok(preferred_path) = conn.query_row(
+            "SELECT preferred_path FROM cli_tool_preferences WHERE tool_type = ?1",
+            rusqlite::params![tool.tool_type.to_db_string()],
+            |row| row.get::<_, String>(0),
+        ) {
+            tool.preferred_installation = tool
+                .installations
+                .iter()
+                .find(|i| i.path == preferred_path)
+                .cloned();
+        }
+
+        if tool.preferred_installation.is_none() && !tool.installations.is_empty() {
+            tool.preferred_installation = Some(tool.installations[0].clone());
+        }
+
+        tools_with_prefs.push(tool);
+    }
+
+    Json(ApiResponse::success(cli_tools::CLIToolsStatus {
+        tools: tools_with_prefs,
+        last_updated: chrono::Utc::now(),
+    }))
+}
+
+async fn cli_tools_refresh() -> Json<ApiResponse<cli_tools::CLIToolsStatus>> {
+    cli_tools_list().await
+}
+
+async fn cli_tool_get_installations(
+    Path(tool_type): Path<String>,
+) -> Json<ApiResponse<cli_tools::CLIToolWithStatus>> {
+    match parse_tool_type(&tool_type) {
+        Ok(parsed) => Json(ApiResponse::success(cli_tools::detect_tool_installations(&parsed))),
+        Err(e) => Json(ApiResponse::error(e)),
+    }
+}
+
+async fn cli_tool_set_preferred(
+    Path(tool_type): Path<String>,
+    axum::Json(payload): axum::Json<SetPreferredPayload>,
+) -> Json<ApiResponse<()>> {
+    let conn = match open_web_db() {
+        Ok(conn) => conn,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    if let Err(e) = conn.execute(
+        "INSERT OR REPLACE INTO cli_tool_preferences (tool_type, preferred_path, updated_at)
+         VALUES (?1, ?2, CURRENT_TIMESTAMP)",
+        rusqlite::params![tool_type, payload.path],
+    ) {
+        return Json(ApiResponse::error(e.to_string()));
+    }
+
+    Json(ApiResponse::success(()))
+}
+
+async fn cli_tool_get_preferred(
+    Path(tool_type): Path<String>,
+) -> Json<ApiResponse<Option<cli_tools::CLIToolInstallation>>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let conn = match open_web_db() {
+        Ok(conn) => conn,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let preferred_path: Option<String> = conn
+        .query_row(
+            "SELECT preferred_path FROM cli_tool_preferences WHERE tool_type = ?1",
+            rusqlite::params![tool_type],
+            |row| row.get(0),
+        )
+        .ok();
+
+    if let Some(path) = preferred_path {
+        let status = cli_tools::detect_tool_installations(&parsed_type);
+        let installation = status.installations.into_iter().find(|i| i.path == path);
+        return Json(ApiResponse::success(installation));
+    }
+
+    Json(ApiResponse::success(None))
+}
+
+async fn cli_tool_is_available(Path(tool_type): Path<String>) -> Json<ApiResponse<bool>> {
+    match parse_tool_type(&tool_type) {
+        Ok(parsed) => {
+            let status = cli_tools::detect_tool_installations(&parsed);
+            Json(ApiResponse::success(status.is_installed))
+        }
+        Err(e) => Json(ApiResponse::error(e)),
+    }
+}
+
+async fn cli_tool_get_command(
+    Path(tool_type): Path<String>,
+) -> Json<ApiResponse<Option<String>>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let conn = match open_web_db() {
+        Ok(conn) => conn,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let preferred_path: Option<String> = conn
+        .query_row(
+            "SELECT preferred_path FROM cli_tool_preferences WHERE tool_type = ?1",
+            rusqlite::params![tool_type],
+            |row| row.get(0),
+        )
+        .ok();
+
+    if let Some(path) = preferred_path {
+        let status = cli_tools::detect_tool_installations(&parsed_type);
+        let installation = status.installations.into_iter().find(|i| i.path == path);
+        return Json(ApiResponse::success(installation.map(|i| i.command)));
+    }
+
+    let status = cli_tools::detect_tool_installations(&parsed_type);
+    Json(ApiResponse::success(
+        status.installations.first().map(|i| i.command.clone()),
+    ))
+}
+
+async fn cli_tool_list_config_files(
+    Path(tool_type): Path<String>,
+) -> Json<ApiResponse<Vec<cli_tools::ConfigFileInfo>>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    match handler.list_config_files().await {
+        Ok(files) => Json(ApiResponse::success(files)),
+        Err(e) => Json(ApiResponse::error(format!("Failed to list config files: {}", e))),
+    }
+}
+
+async fn cli_tool_read_config_file(
+    Path(tool_type): Path<String>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> Json<ApiResponse<cli_tools::ConfigFileContent>> {
+    let path = params.get("path").cloned().unwrap_or_default();
+    if path.is_empty() {
+        return Json(ApiResponse::error("path is required".to_string()));
+    }
+
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    match handler.read_config_file(&path).await {
+        Ok(content) => Json(ApiResponse::success(content)),
+        Err(e) => Json(ApiResponse::error(format!("Failed to read config file: {}", e))),
+    }
+}
+
+async fn cli_tool_write_config_file(
+    Path(tool_type): Path<String>,
+    axum::Json(payload): axum::Json<ConfigFilePayload>,
+) -> Json<ApiResponse<()>> {
+    if payload.path.is_empty() {
+        return Json(ApiResponse::error("path is required".to_string()));
+    }
+
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    match handler
+        .write_config_file(&payload.path, payload.content.as_deref().unwrap_or_default())
+        .await
+    {
+        Ok(_) => Json(ApiResponse::success(())),
+        Err(e) => Json(ApiResponse::error(format!("Failed to write config file: {}", e))),
+    }
+}
+
+async fn cli_tool_get_settings(
+    Path(tool_type): Path<String>,
+) -> Json<ApiResponse<cli_tools::ToolSettings>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    match handler.get_settings().await {
+        Ok(settings) => Json(ApiResponse::success(settings)),
+        Err(e) => Json(ApiResponse::error(format!("Failed to get settings: {}", e))),
+    }
+}
+
+async fn cli_tool_set_setting(
+    Path(tool_type): Path<String>,
+    axum::Json(payload): axum::Json<SetSettingPayload>,
+) -> Json<ApiResponse<()>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    match handler.set_setting(&payload.key, payload.value).await {
+        Ok(_) => Json(ApiResponse::success(())),
+        Err(e) => Json(ApiResponse::error(format!("Failed to set setting: {}", e))),
+    }
+}
+
+async fn cli_tool_list_mcp_servers(
+    Path(tool_type): Path<String>,
+) -> Json<ApiResponse<Vec<cli_tools::MCPServerConfig>>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    match handler.list_mcp_servers().await {
+        Ok(servers) => Json(ApiResponse::success(servers)),
+        Err(e) => Json(ApiResponse::error(format!("Failed to list MCP servers: {}", e))),
+    }
+}
+
+async fn cli_tool_add_mcp_server(
+    Path(tool_type): Path<String>,
+    axum::Json(config): axum::Json<crate::commands::cli_tools::MCPServerInput>,
+) -> Json<ApiResponse<()>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    let mcp_config: cli_tools::MCPServerConfig = config.into();
+    match handler.add_mcp_server(mcp_config).await {
+        Ok(_) => Json(ApiResponse::success(())),
+        Err(e) => Json(ApiResponse::error(format!("Failed to add MCP server: {}", e))),
+    }
+}
+
+async fn cli_tool_remove_mcp_server(
+    Path(tool_type): Path<String>,
+    axum::Json(payload): axum::Json<RemoveMcpPayload>,
+) -> Json<ApiResponse<()>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    match handler.remove_mcp_server(&payload.name).await {
+        Ok(_) => Json(ApiResponse::success(())),
+        Err(e) => Json(ApiResponse::error(format!("Failed to remove MCP server: {}", e))),
+    }
+}
+
+async fn cli_tool_list_agents(
+    Path(tool_type): Path<String>,
+) -> Json<ApiResponse<Vec<cli_tools::AgentDefinition>>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    match handler.list_agents().await {
+        Ok(agents) => Json(ApiResponse::success(agents)),
+        Err(e) => Json(ApiResponse::error(format!("Failed to list agents: {}", e))),
+    }
+}
+
+async fn cli_tool_get_agent(
+    Path((tool_type, name)): Path<(String, String)>,
+) -> Json<ApiResponse<cli_tools::AgentDefinition>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    match handler.get_agent(&name).await {
+        Ok(agent) => Json(ApiResponse::success(agent)),
+        Err(e) => Json(ApiResponse::error(format!("Failed to get agent: {}", e))),
+    }
+}
+
+async fn cli_tool_execute_cli_command(
+    Path(tool_type): Path<String>,
+    axum::Json(payload): axum::Json<ExecuteCommandPayload>,
+) -> Json<ApiResponse<cli_tools::CommandOutput>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    let args_refs: Vec<&str> = payload.args.iter().map(|s| s.as_str()).collect();
+    match handler.execute_command(&payload.command, &args_refs).await {
+        Ok(output) => Json(ApiResponse::success(output)),
+        Err(e) => Json(ApiResponse::error(format!("Failed to execute command: {}", e))),
+    }
+}
+
+async fn cli_tool_get_config_dir(
+    Path(tool_type): Path<String>,
+) -> Json<ApiResponse<String>> {
+    let parsed_type = match parse_tool_type(&tool_type) {
+        Ok(parsed) => parsed,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let handler = cli_tools::get_config_handler(&parsed_type);
+    Json(ApiResponse::success(
+        handler.config_dir().to_string_lossy().to_string(),
+    ))
+}
+
+async fn cli_tool_track_usage(
+    Path(tool_type): Path<String>,
+    axum::Json(payload): axum::Json<UsageTrackPayload>,
+) -> Json<ApiResponse<()>> {
+    let conn = match open_web_db() {
+        Ok(conn) => conn,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    if let Err(e) = conn.execute(
+        "INSERT INTO cli_tool_usage (tool_type, action, details) VALUES (?1, ?2, ?3)",
+        rusqlite::params![tool_type, payload.action, payload.details],
+    ) {
+        return Json(ApiResponse::error(e.to_string()));
+    }
+
+    Json(ApiResponse::success(()))
+}
+
+async fn cli_tool_get_usage(
+    Path(tool_type): Path<String>,
+    axum::extract::Query(params): axum::extract::Query<UsageQuery>,
+) -> Json<ApiResponse<Vec<crate::commands::cli_tools::CLIToolUsageEntry>>> {
+    let conn = match open_web_db() {
+        Ok(conn) => conn,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let limit = params.limit.unwrap_or(100);
+    let mut stmt = match conn.prepare(
+        "SELECT id, tool_type, action, details, timestamp
+         FROM cli_tool_usage
+         WHERE tool_type = ?1
+         ORDER BY timestamp DESC
+         LIMIT ?2",
+    ) {
+        Ok(stmt) => stmt,
+        Err(e) => return Json(ApiResponse::error(e.to_string())),
+    };
+
+    let entries = stmt
+        .query_map(rusqlite::params![tool_type, limit], |row| {
+            Ok(crate::commands::cli_tools::CLIToolUsageEntry {
+                id: row.get(0)?,
+                tool_type: row.get(1)?,
+                action: row.get(2)?,
+                details: row.get(3)?,
+                timestamp: row.get(4)?,
+            })
+        })
+        .map_err(|e| e.to_string());
+
+    match entries {
+        Ok(rows) => Json(ApiResponse::success(
+            rows.filter_map(|r| r.ok()).collect(),
+        )),
+        Err(e) => Json(ApiResponse::error(e)),
+    }
+}
+
+async fn cli_tool_get_usage_stats(
+    Path(tool_type): Path<String>,
+) -> Json<ApiResponse<crate::commands::cli_tools::CLIToolUsageStats>> {
+    let conn = match open_web_db() {
+        Ok(conn) => conn,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    let total_actions: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM cli_tool_usage WHERE tool_type = ?1",
+            rusqlite::params![tool_type],
+            |row| row.get(0),
+        )
+        .unwrap_or(0);
+
+    let mut stmt = match conn.prepare(
+        "SELECT action, COUNT(*) as count
+         FROM cli_tool_usage
+         WHERE tool_type = ?1
+         GROUP BY action",
+    ) {
+        Ok(stmt) => stmt,
+        Err(e) => return Json(ApiResponse::error(e.to_string())),
+    };
+
+    let actions_by_type: std::collections::HashMap<String, i64> = match stmt
+        .query_map(rusqlite::params![tool_type], |row| Ok((row.get(0)?, row.get(1)?)))
+    {
+        Ok(rows) => rows.filter_map(|r| r.ok()).collect(),
+        Err(e) => return Json(ApiResponse::error(e.to_string())),
+    };
+
+    let mut stmt = match conn.prepare(
+        "SELECT id, tool_type, action, details, timestamp
+         FROM cli_tool_usage
+         WHERE tool_type = ?1
+         ORDER BY timestamp DESC
+         LIMIT 10",
+    ) {
+        Ok(stmt) => stmt,
+        Err(e) => return Json(ApiResponse::error(e.to_string())),
+    };
+
+    let recent_actions: Vec<crate::commands::cli_tools::CLIToolUsageEntry> = match stmt
+        .query_map(rusqlite::params![tool_type], |row| {
+            Ok(crate::commands::cli_tools::CLIToolUsageEntry {
+                id: row.get(0)?,
+                tool_type: row.get(1)?,
+                details: row.get(3)?,
+                action: row.get(2)?,
+                timestamp: row.get(4)?,
+            })
+        }) {
+        Ok(rows) => rows.filter_map(|r| r.ok()).collect(),
+        Err(e) => return Json(ApiResponse::error(e.to_string())),
+    };
+
+    let first_action: Option<String> = conn
+        .query_row(
+            "SELECT MIN(timestamp) FROM cli_tool_usage WHERE tool_type = ?1",
+            rusqlite::params![tool_type],
+            |row| row.get(0),
+        )
+        .ok();
+
+    let last_action: Option<String> = conn
+        .query_row(
+            "SELECT MAX(timestamp) FROM cli_tool_usage WHERE tool_type = ?1",
+            rusqlite::params![tool_type],
+            |row| row.get(0),
+        )
+        .ok();
+
+    Json(ApiResponse::success(
+        crate::commands::cli_tools::CLIToolUsageStats {
+            tool_type,
+            total_actions,
+            actions_by_type,
+            recent_actions,
+            first_action,
+            last_action,
+        },
+    ))
+}
+
+async fn cli_tool_clear_usage(
+    Path(tool_type): Path<String>,
+) -> Json<ApiResponse<i64>> {
+    let conn = match open_web_db() {
+        Ok(conn) => conn,
+        Err(e) => return Json(ApiResponse::error(e)),
+    };
+
+    match conn.execute(
+        "DELETE FROM cli_tool_usage WHERE tool_type = ?1",
+        rusqlite::params![tool_type],
+    ) {
+        Ok(deleted) => Json(ApiResponse::success(deleted as i64)),
+        Err(e) => Json(ApiResponse::error(e.to_string())),
+    }
+}
+
 /// Find global config files in ~/.claude/
 async fn find_global_config_files() -> Json<ApiResponse<Vec<commands::claude::GlobalConfigFile>>> {
     match commands::claude::find_global_config_files().await {
@@ -263,9 +841,17 @@ async fn load_session_history(
 }
 
 /// List running Claude sessions
-async fn list_running_claude_sessions() -> Json<ApiResponse<Vec<serde_json::Value>>> {
-    // Return empty for web mode - no actual Claude processes in web mode
-    Json(ApiResponse::success(vec![]))
+async fn list_running_claude_sessions(
+    AxumState(state): AxumState<AppState>,
+) -> Json<ApiResponse<Vec<crate::process::ProcessInfo>>> {
+    let sessions: Vec<crate::process::ProcessInfo> = state
+        .process_info
+        .lock()
+        .await
+        .values()
+        .cloned()
+        .collect();
+    Json(ApiResponse::success(sessions))
 }
 
 /// Execute Claude code - mock for web mode
@@ -284,17 +870,51 @@ async fn resume_claude_code() -> Json<ApiResponse<serde_json::Value>> {
 }
 
 /// Cancel Claude execution
-async fn cancel_claude_execution(Path(sessionId): Path<String>) -> Json<ApiResponse<()>> {
-    // In web mode, we don't have a way to cancel the subprocess cleanly
-    // The WebSocket closing should handle cleanup
-    println!("[TRACE] Cancel request for session: {}", sessionId);
+async fn cancel_claude_execution(
+    Path(session_id): Path<String>,
+    AxumState(state): AxumState<AppState>,
+) -> Json<ApiResponse<()>> {
+    println!("[TRACE] Cancel request for session: {}", session_id);
+
+    let session_key = {
+        let map = state.session_map.lock().await;
+        map.get(&session_id).cloned().unwrap_or_else(|| session_id.clone())
+    };
+
+    state
+        .cancelled_sessions
+        .lock()
+        .await
+        .insert(session_key.clone());
+
+    if let Some(child_handle) = state.active_processes.lock().await.remove(&session_key) {
+        let mut child = child_handle.lock().await;
+        let _ = child.kill().await;
+    }
+    state.process_info.lock().await.remove(&session_key);
+
+    // Notify client of cancellation
+    send_to_session(
+        &state,
+        &session_key,
+        json!({
+            "type": "cancelled",
+            "message": "Execution cancelled"
+        })
+        .to_string(),
+    )
+    .await;
+
+    // Clean up session map
+    state.session_map.lock().await.remove(&session_id);
+
     Json(ApiResponse::success(()))
 }
 
 /// Get Claude session output
-async fn get_claude_session_output(Path(sessionId): Path<String>) -> Json<ApiResponse<String>> {
+async fn get_claude_session_output(Path(session_id): Path<String>) -> Json<ApiResponse<String>> {
     // In web mode, output is streamed via WebSocket, not stored
-    println!("[TRACE] Output request for session: {}", sessionId);
+    println!("[TRACE] Output request for session: {}", session_id);
     Json(ApiResponse::success(
         "Output available via WebSocket only".to_string(),
     ))
@@ -307,11 +927,11 @@ async fn claude_websocket(ws: WebSocketUpgrade, AxumState(state): AxumState<AppS
 
 async fn claude_websocket_handler(socket: WebSocket, state: AppState) {
     let (mut sender, mut receiver) = socket.split();
-    let session_id = uuid::Uuid::new_v4().to_string();
+    let session_key = uuid::Uuid::new_v4().to_string();
 
     println!(
-        "[TRACE] WebSocket handler started - session_id: {}",
-        session_id
+        "[TRACE] WebSocket handler started - session_key: {}",
+        session_key
     );
 
     // Channel for sending output to WebSocket
@@ -320,7 +940,7 @@ async fn claude_websocket_handler(socket: WebSocket, state: AppState) {
     // Store session in state
     {
         let mut sessions = state.active_sessions.lock().await;
-        sessions.insert(session_id.clone(), tx);
+        sessions.insert(session_key.clone(), tx);
         println!(
             "[TRACE] Session stored in state - active sessions count: {}",
             sessions.len()
@@ -328,7 +948,7 @@ async fn claude_websocket_handler(socket: WebSocket, state: AppState) {
     }
 
     // Task to forward channel messages to WebSocket
-    let session_id_for_forward = session_id.clone();
+    let session_id_for_forward = session_key.clone();
     let forward_task = tokio::spawn(async move {
         println!(
             "[TRACE] Forward task started for session {}",
@@ -366,13 +986,21 @@ async fn claude_websocket_handler(socket: WebSocket, state: AppState) {
                         println!("[TRACE] Prompt length: {} chars", request.prompt.len());
 
                         // Execute Claude command based on request type
-                        let session_id_clone = session_id.clone();
+                        let session_id_clone = session_key.clone();
                         let state_clone = state.clone();
 
                         println!(
                             "[TRACE] Spawning task to execute command: {}",
                             request.command_type
                         );
+
+                        if let Some(ref claude_session_id) = request.session_id {
+                            if !claude_session_id.is_empty() {
+                                let mut map = state_clone.session_map.lock().await;
+                                map.insert(claude_session_id.clone(), session_id_clone.clone());
+                            }
+                        }
+
                         tokio::spawn(async move {
                             println!("[TRACE] Task started for command execution");
                             let result = match request.command_type.as_str() {
@@ -425,28 +1053,49 @@ async fn claude_websocket_handler(socket: WebSocket, state: AppState) {
                             );
 
                             // Send completion message
+                            let cancelled = {
+                                let cancelled_sessions =
+                                    state_clone.cancelled_sessions.lock().await;
+                                cancelled_sessions.contains(&session_id_clone)
+                            };
+
                             if let Some(sender) = state_clone
                                 .active_sessions
                                 .lock()
                                 .await
                                 .get(&session_id_clone)
                             {
-                                let completion_msg = match result {
-                                    Ok(_) => json!({
+                                let completion_msg = if cancelled {
+                                    json!({
                                         "type": "completion",
-                                        "status": "success"
-                                    }),
-                                    Err(e) => json!({
-                                        "type": "completion",
-                                        "status": "error",
-                                        "error": e
-                                    }),
+                                        "status": "cancelled"
+                                    })
+                                } else {
+                                    match result {
+                                        Ok(_) => json!({
+                                            "type": "completion",
+                                            "status": "success"
+                                        }),
+                                        Err(e) => json!({
+                                            "type": "completion",
+                                            "status": "error",
+                                            "error": e
+                                        }),
+                                    }
                                 };
                                 println!("[TRACE] Sending completion message: {}", completion_msg);
                                 let _ = sender.send(completion_msg.to_string()).await;
                             } else {
-                                println!("[TRACE] Session not found in active sessions when sending completion");
+                                println!(
+                                    "[TRACE] Session not found in active sessions when sending completion"
+                                );
                             }
+
+                            state_clone
+                                .cancelled_sessions
+                                .lock()
+                                .await
+                                .remove(&session_id_clone);
                         });
                     }
                     Err(e) => {
@@ -458,7 +1107,8 @@ async fn claude_websocket_handler(socket: WebSocket, state: AppState) {
                             "type": "error",
                             "message": format!("Failed to parse request: {}", e)
                         });
-                        if let Some(sender_tx) = state.active_sessions.lock().await.get(&session_id)
+                        if let Some(sender_tx) =
+                            state.active_sessions.lock().await.get(&session_key)
                         {
                             let _ = sender_tx.send(error_msg.to_string()).await;
                         }
@@ -480,16 +1130,26 @@ async fn claude_websocket_handler(socket: WebSocket, state: AppState) {
     // Clean up session
     {
         let mut sessions = state.active_sessions.lock().await;
-        sessions.remove(&session_id);
+        sessions.remove(&session_key);
         println!(
             "[TRACE] Session {} removed from state - remaining sessions: {}",
-            session_id,
+            session_key,
             sessions.len()
         );
     }
 
+    if let Some(child_handle) = state.active_processes.lock().await.remove(&session_key) {
+        let mut child = child_handle.lock().await;
+        let _ = child.kill().await;
+    }
+
+    let mut session_map = state.session_map.lock().await;
+    session_map.retain(|_, value| value != &session_key);
+    state.process_info.lock().await.remove(&session_key);
+    state.cancelled_sessions.lock().await.remove(&session_key);
+
     forward_task.abort();
-    println!("[TRACE] WebSocket handler ended for session {}", session_id);
+    println!("[TRACE] WebSocket handler ended for session {}", session_key);
 }
 
 // Claude command execution functions for WebSocket streaming
@@ -563,48 +1223,121 @@ async fn execute_claude_command(
     })?;
     println!("[TRACE] Claude process spawned successfully");
 
-    // Get stdout for streaming
+    // Get stdout/stderr for streaming
     let stdout = child.stdout.take().ok_or_else(|| {
         println!("[TRACE] Failed to get stdout from child process");
         "Failed to get stdout".to_string()
     })?;
+    let stderr = child.stderr.take().ok_or_else(|| {
+        println!("[TRACE] Failed to get stderr from child process");
+        "Failed to get stderr".to_string()
+    })?;
     let stdout_reader = BufReader::new(stdout);
+    let stderr_reader = BufReader::new(stderr);
+
+    let child_handle = Arc::new(tokio::sync::Mutex::new(child));
+    let run_id = next_run_id(&state).await;
+    let pid = child_handle.lock().await.id().unwrap_or(0);
+    let initial_session_id = session_id.clone();
+    state.process_info.lock().await.insert(
+        session_id.clone(),
+        crate::process::ProcessInfo {
+            run_id,
+            process_type: crate::process::ProcessType::ClaudeSession {
+                session_id: initial_session_id,
+            },
+            pid,
+            started_at: chrono::Utc::now(),
+            project_path: project_path.clone(),
+            task: prompt.clone(),
+            model: model.clone(),
+        },
+    );
+    state
+        .active_processes
+        .lock()
+        .await
+        .insert(session_id.clone(), child_handle.clone());
 
     println!("[TRACE] Starting to read Claude output...");
-    // Stream output line by line
-    let mut lines = stdout_reader.lines();
-    let mut line_count = 0;
-    while let Ok(Some(line)) = lines.next_line().await {
-        line_count += 1;
-        println!("[TRACE] Claude output line {}: {}", line_count, line);
+    let session_id_for_stdout = session_id.clone();
+    let state_for_stdout = state.clone();
+    let stdout_task = tokio::spawn(async move {
+        let mut lines = stdout_reader.lines();
+        let mut line_count = 0;
+        while let Ok(Some(line)) = lines.next_line().await {
+            line_count += 1;
+            println!("[TRACE] Claude output line {}: {}", line_count, line);
 
-        // Send each line to WebSocket
-        let message = json!({
-            "type": "output",
-            "content": line
-        })
-        .to_string();
-        println!("[TRACE] Sending output message to session: {}", message);
-        send_to_session(&state, &session_id, message).await;
-    }
+            if let Ok(msg) = serde_json::from_str::<serde_json::Value>(&line) {
+                if msg["type"] == "system" && msg["subtype"] == "init" {
+                    if let Some(claude_session_id) = msg["session_id"].as_str() {
+                        let mut map = state_for_stdout.session_map.lock().await;
+                        map.entry(claude_session_id.to_string())
+                            .or_insert_with(|| session_id_for_stdout.clone());
 
-    println!(
-        "[TRACE] Finished reading Claude output ({} lines total)",
-        line_count
-    );
+                        let mut info_map = state_for_stdout.process_info.lock().await;
+                        if let Some(info) = info_map.get_mut(&session_id_for_stdout) {
+                            info.process_type = crate::process::ProcessType::ClaudeSession {
+                                session_id: claude_session_id.to_string(),
+                            };
+                        }
+                    }
+                }
+            }
+
+            let message = json!({
+                "type": "output",
+                "content": line
+            })
+            .to_string();
+            println!("[TRACE] Sending output message to session: {}", message);
+            send_to_session(&state_for_stdout, &session_id_for_stdout, message).await;
+        }
+
+        println!(
+            "[TRACE] Finished reading Claude output ({} lines total)",
+            line_count
+        );
+    });
+
+    let session_id_for_stderr = session_id.clone();
+    let state_for_stderr = state.clone();
+    let stderr_task = tokio::spawn(async move {
+        let mut lines = stderr_reader.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            println!("[TRACE] Claude stderr: {}", line);
+            let message = json!({
+                "type": "stderr",
+                "content": line
+            })
+            .to_string();
+            send_to_session(&state_for_stderr, &session_id_for_stderr, message).await;
+        }
+    });
 
     // Wait for process to complete
     println!("[TRACE] Waiting for Claude process to complete...");
-    let exit_status = child.wait().await.map_err(|e| {
+    let exit_status = {
+        let mut child = child_handle.lock().await;
+        child.wait().await
+    }
+    .map_err(|e| {
         let error = format!("Failed to wait for Claude: {}", e);
         println!("[TRACE] Wait error: {}", error);
         error
     })?;
 
+    let _ = stdout_task.await;
+    let _ = stderr_task.await;
+
     println!(
         "[TRACE] Claude process completed with status: {:?}",
         exit_status
     );
+
+    state.active_processes.lock().await.remove(&session_id);
+    state.process_info.lock().await.remove(&session_id);
 
     if !exit_status.success() {
         let error = format!(
@@ -666,26 +1399,98 @@ async fn continue_claude_command(
         .spawn()
         .map_err(|e| format!("Failed to spawn Claude: {}", e))?;
     let stdout = child.stdout.take().ok_or("Failed to get stdout")?;
+    let stderr = child.stderr.take().ok_or("Failed to get stderr")?;
     let stdout_reader = BufReader::new(stdout);
+    let stderr_reader = BufReader::new(stderr);
 
-    let mut lines = stdout_reader.lines();
-    while let Ok(Some(line)) = lines.next_line().await {
-        send_to_session(
-            &state,
-            &session_id,
-            json!({
-                "type": "output",
-                "content": line
-            })
-            .to_string(),
-        )
-        .await;
-    }
-
-    let exit_status = child
-        .wait()
+    let child_handle = Arc::new(tokio::sync::Mutex::new(child));
+    let run_id = next_run_id(&state).await;
+    let pid = child_handle.lock().await.id().unwrap_or(0);
+    state.process_info.lock().await.insert(
+        session_id.clone(),
+        crate::process::ProcessInfo {
+            run_id,
+            process_type: crate::process::ProcessType::ClaudeSession {
+                session_id: session_id.clone(),
+            },
+            pid,
+            started_at: chrono::Utc::now(),
+            project_path: project_path.clone(),
+            task: prompt.clone(),
+            model: model.clone(),
+        },
+    );
+    state
+        .active_processes
+        .lock()
         .await
-        .map_err(|e| format!("Failed to wait for Claude: {}", e))?;
+        .insert(session_id.clone(), child_handle.clone());
+
+    let session_id_for_stdout = session_id.clone();
+    let state_for_stdout = state.clone();
+    let stdout_task = tokio::spawn(async move {
+        let mut lines = stdout_reader.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            if let Ok(msg) = serde_json::from_str::<serde_json::Value>(&line) {
+                if msg["type"] == "system" && msg["subtype"] == "init" {
+                    if let Some(claude_session_id) = msg["session_id"].as_str() {
+                        let mut map = state_for_stdout.session_map.lock().await;
+                        map.entry(claude_session_id.to_string())
+                            .or_insert_with(|| session_id_for_stdout.clone());
+
+                        let mut info_map = state_for_stdout.process_info.lock().await;
+                        if let Some(info) = info_map.get_mut(&session_id_for_stdout) {
+                            info.process_type = crate::process::ProcessType::ClaudeSession {
+                                session_id: claude_session_id.to_string(),
+                            };
+                        }
+                    }
+                }
+            }
+
+            send_to_session(
+                &state_for_stdout,
+                &session_id_for_stdout,
+                json!({
+                    "type": "output",
+                    "content": line
+                })
+                .to_string(),
+            )
+            .await;
+        }
+    });
+
+    let session_id_for_stderr = session_id.clone();
+    let state_for_stderr = state.clone();
+    let stderr_task = tokio::spawn(async move {
+        let mut lines = stderr_reader.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            send_to_session(
+                &state_for_stderr,
+                &session_id_for_stderr,
+                json!({
+                    "type": "stderr",
+                    "content": line
+                })
+                .to_string(),
+            )
+            .await;
+        }
+    });
+
+    let exit_status = {
+        let mut child = child_handle.lock().await;
+        child.wait().await
+    }
+    .map_err(|e| format!("Failed to wait for Claude: {}", e))?;
+
+    let _ = stdout_task.await;
+    let _ = stderr_task.await;
+
+    state.active_processes.lock().await.remove(&session_id);
+    state.process_info.lock().await.remove(&session_id);
+
     if !exit_status.success() {
         return Err(format!(
             "Claude execution failed with exit code: {:?}",
@@ -764,26 +1569,98 @@ async fn resume_claude_command(
     })?;
     println!("[resume_claude_command] Process spawned successfully");
     let stdout = child.stdout.take().ok_or("Failed to get stdout")?;
+    let stderr = child.stderr.take().ok_or("Failed to get stderr")?;
     let stdout_reader = BufReader::new(stdout);
+    let stderr_reader = BufReader::new(stderr);
 
-    let mut lines = stdout_reader.lines();
-    while let Ok(Some(line)) = lines.next_line().await {
-        send_to_session(
-            &state,
-            &session_id,
-            json!({
-                "type": "output",
-                "content": line
-            })
-            .to_string(),
-        )
-        .await;
-    }
-
-    let exit_status = child
-        .wait()
+    let child_handle = Arc::new(tokio::sync::Mutex::new(child));
+    let run_id = next_run_id(&state).await;
+    let pid = child_handle.lock().await.id().unwrap_or(0);
+    state.process_info.lock().await.insert(
+        session_id.clone(),
+        crate::process::ProcessInfo {
+            run_id,
+            process_type: crate::process::ProcessType::ClaudeSession {
+                session_id: session_id.clone(),
+            },
+            pid,
+            started_at: chrono::Utc::now(),
+            project_path: project_path.clone(),
+            task: prompt.clone(),
+            model: model.clone(),
+        },
+    );
+    state
+        .active_processes
+        .lock()
         .await
-        .map_err(|e| format!("Failed to wait for Claude: {}", e))?;
+        .insert(session_id.clone(), child_handle.clone());
+
+    let session_id_for_stdout = session_id.clone();
+    let state_for_stdout = state.clone();
+    let stdout_task = tokio::spawn(async move {
+        let mut lines = stdout_reader.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            if let Ok(msg) = serde_json::from_str::<serde_json::Value>(&line) {
+                if msg["type"] == "system" && msg["subtype"] == "init" {
+                    if let Some(claude_session_id) = msg["session_id"].as_str() {
+                        let mut map = state_for_stdout.session_map.lock().await;
+                        map.entry(claude_session_id.to_string())
+                            .or_insert_with(|| session_id_for_stdout.clone());
+
+                        let mut info_map = state_for_stdout.process_info.lock().await;
+                        if let Some(info) = info_map.get_mut(&session_id_for_stdout) {
+                            info.process_type = crate::process::ProcessType::ClaudeSession {
+                                session_id: claude_session_id.to_string(),
+                            };
+                        }
+                    }
+                }
+            }
+
+            send_to_session(
+                &state_for_stdout,
+                &session_id_for_stdout,
+                json!({
+                    "type": "output",
+                    "content": line
+                })
+                .to_string(),
+            )
+            .await;
+        }
+    });
+
+    let session_id_for_stderr = session_id.clone();
+    let state_for_stderr = state.clone();
+    let stderr_task = tokio::spawn(async move {
+        let mut lines = stderr_reader.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            send_to_session(
+                &state_for_stderr,
+                &session_id_for_stderr,
+                json!({
+                    "type": "stderr",
+                    "content": line
+                })
+                .to_string(),
+            )
+            .await;
+        }
+    });
+
+    let exit_status = {
+        let mut child = child_handle.lock().await;
+        child.wait().await
+    }
+    .map_err(|e| format!("Failed to wait for Claude: {}", e))?;
+
+    let _ = stdout_task.await;
+    let _ = stderr_task.await;
+
+    state.active_processes.lock().await.remove(&session_id);
+    state.process_info.lock().await.remove(&session_id);
+
     if !exit_status.success() {
         return Err(format!(
             "Claude execution failed with exit code: {:?}",
@@ -817,10 +1694,22 @@ async fn send_to_session(state: &AppState, session_id: &str, message: String) {
     }
 }
 
+async fn next_run_id(state: &AppState) -> i64 {
+    let mut next_id = state.next_run_id.lock().await;
+    let current = *next_id;
+    *next_id += 1;
+    current
+}
+
 /// Create the web server
 pub async fn create_web_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
     let state = AppState {
         active_sessions: Arc::new(Mutex::new(std::collections::HashMap::new())),
+        active_processes: Arc::new(Mutex::new(HashMap::new())),
+        session_map: Arc::new(Mutex::new(HashMap::new())),
+        cancelled_sessions: Arc::new(Mutex::new(HashSet::new())),
+        process_info: Arc::new(Mutex::new(HashMap::new())),
+        next_run_id: Arc::new(Mutex::new(1)),
     };
 
     // CORS layer to allow requests from phone browsers
@@ -853,6 +1742,74 @@ pub async fn create_web_server(port: u16) -> Result<(), Box<dyn std::error::Erro
         .route("/api/slash-commands", get(list_slash_commands))
         // MCP
         .route("/api/mcp/servers", get(mcp_list))
+        // CLI Tools
+        .route("/api/cli-tools", get(cli_tools_list))
+        .route("/api/cli-tools/refresh", get(cli_tools_refresh))
+        .route(
+            "/api/cli-tools/{toolType}/installations",
+            get(cli_tool_get_installations),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/preferred",
+            get(cli_tool_get_preferred).post(cli_tool_set_preferred),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/available",
+            get(cli_tool_is_available),
+        )
+        .route("/api/cli-tools/{toolType}/command", get(cli_tool_get_command))
+        .route(
+            "/api/cli-tools/{toolType}/config/files",
+            get(cli_tool_list_config_files),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/config/file",
+            get(cli_tool_read_config_file).post(cli_tool_write_config_file),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/settings",
+            get(cli_tool_get_settings).post(cli_tool_set_setting),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/mcp",
+            get(cli_tool_list_mcp_servers).post(cli_tool_add_mcp_server),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/mcp/remove",
+            post(cli_tool_remove_mcp_server),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/agents",
+            get(cli_tool_list_agents),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/agents/{name}",
+            get(cli_tool_get_agent),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/execute",
+            post(cli_tool_execute_cli_command),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/config-dir",
+            get(cli_tool_get_config_dir),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/usage/track",
+            post(cli_tool_track_usage),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/usage",
+            get(cli_tool_get_usage),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/usage/stats",
+            get(cli_tool_get_usage_stats),
+        )
+        .route(
+            "/api/cli-tools/{toolType}/usage/clear",
+            post(cli_tool_clear_usage),
+        )
         // Config files / Memories
         .route("/api/config/global", get(find_global_config_files))
         .route("/api/config/project", get(find_claude_md_files))

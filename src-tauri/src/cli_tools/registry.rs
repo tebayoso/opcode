@@ -1,4 +1,4 @@
-use super::types::{CLIToolDefinition, CLIToolType, DetectionConfig};
+use super::types::{CLIToolCapabilities, CLIToolDefinition, CLIToolType, DetectionConfig};
 
 /// Get the detection configuration for a specific CLI tool
 pub fn get_tool_definition(tool_type: &CLIToolType) -> CLIToolDefinition {
@@ -23,6 +23,13 @@ pub fn get_tool_definition(tool_type: &CLIToolType) -> CLIToolDefinition {
                 gh_extension: None,
                 version_pattern: Some(r"(\d+\.\d+\.\d+)"),
             },
+            capabilities: CLIToolCapabilities {
+                files: true,
+                settings: true,
+                mcp_servers: true,
+                agents: true,
+                usage: true,
+            },
         },
 
         CLIToolType::Gemini => CLIToolDefinition {
@@ -42,6 +49,13 @@ pub fn get_tool_definition(tool_type: &CLIToolType) -> CLIToolDefinition {
                 version_args: vec!["--version"],
                 gh_extension: None,
                 version_pattern: Some(r"(\d+\.\d+\.\d+)"),
+            },
+            capabilities: CLIToolCapabilities {
+                files: true,
+                settings: true,
+                mcp_servers: true,
+                agents: true,
+                usage: true,
             },
         },
 
@@ -63,6 +77,13 @@ pub fn get_tool_definition(tool_type: &CLIToolType) -> CLIToolDefinition {
                 gh_extension: None,
                 version_pattern: Some(r"(\d+\.\d+\.\d+)"),
             },
+            capabilities: CLIToolCapabilities {
+                files: true,
+                settings: true,
+                mcp_servers: true,
+                agents: true,
+                usage: true,
+            },
         },
 
         CLIToolType::OpenCode => CLIToolDefinition {
@@ -80,6 +101,13 @@ pub fn get_tool_definition(tool_type: &CLIToolType) -> CLIToolDefinition {
                 gh_extension: None,
                 version_pattern: Some(r"(\d+\.\d+\.\d+)"),
             },
+            capabilities: CLIToolCapabilities {
+                files: true,
+                settings: true,
+                mcp_servers: true,
+                agents: true,
+                usage: true,
+            },
         },
 
         CLIToolType::GitHubCopilot => CLIToolDefinition {
@@ -93,6 +121,13 @@ pub fn get_tool_definition(tool_type: &CLIToolType) -> CLIToolDefinition {
                 version_args: vec!["--version"],
                 gh_extension: Some("github/gh-copilot"),
                 version_pattern: Some(r"(\d+\.\d+\.\d+)"),
+            },
+            capabilities: CLIToolCapabilities {
+                files: true,
+                settings: true,
+                mcp_servers: false,
+                agents: false,
+                usage: true,
             },
         },
 
@@ -112,11 +147,62 @@ pub fn get_tool_definition(tool_type: &CLIToolType) -> CLIToolDefinition {
                 gh_extension: None,
                 version_pattern: Some(r"(\d+\.\d+\.\d+)"),
             },
+            capabilities: CLIToolCapabilities {
+                files: true,
+                settings: true,
+                mcp_servers: true,
+                agents: true,
+                usage: true,
+            },
+        },
+        CLIToolType::ESLint => CLIToolDefinition {
+            tool_type: CLIToolType::ESLint,
+            detection: DetectionConfig {
+                binary_names: vec!["eslint"],
+                homebrew_names: vec![],
+                npm_packages: vec!["eslint"],
+                standard_paths: vec![
+                    "./node_modules/.bin/eslint",
+                ],
+                version_args: vec!["--version"],
+                gh_extension: None,
+                version_pattern: Some(r"v(\d+\.\d+\.\d+)"),
+            },
+            capabilities: CLIToolCapabilities {
+                files: true,
+                settings: true,
+                mcp_servers: false,
+                agents: false,
+                usage: true,
+            },
+        },
+
+        CLIToolType::Vite => CLIToolDefinition {
+            tool_type: CLIToolType::Vite,
+            detection: DetectionConfig {
+                binary_names: vec!["vite"],
+                homebrew_names: vec![],
+                npm_packages: vec!["vite"],
+                standard_paths: vec![
+                    "./node_modules/.bin/vite",
+                ],
+                version_args: vec!["--version"],
+                gh_extension: None,
+                version_pattern: Some(r"vite/(\d+\.\d+\.\d+)"),
+            },
+            capabilities: CLIToolCapabilities {
+                files: true,
+                settings: true,
+                mcp_servers: false,
+                agents: false,
+                usage: true,
+            },
         },
     }
 }
 
 /// Get definitions for all supported CLI tools
+#[allow(dead_code)]
 pub fn get_all_tool_definitions() -> Vec<CLIToolDefinition> {
     CLIToolType::all()
         .into_iter()
