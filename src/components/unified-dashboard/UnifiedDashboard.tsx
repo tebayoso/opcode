@@ -1,6 +1,7 @@
 import React from 'react';
 import { useUnifiedDashboard } from './UnifiedDashboardContext';
 import { UnifiedDashboardSidebar } from './UnifiedDashboardSidebar';
+import { ToastProvider } from './ToastProvider';
 import { OverviewPanel } from './panels/OverviewPanel';
 import { ToolsPanel } from './panels/ToolsPanel';
 import { SkillsPanel } from './panels/SkillsPanel';
@@ -37,11 +38,13 @@ export function UnifiedDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <UnifiedDashboardSidebar />
-      <main className="flex-1 overflow-auto">
-        {renderPanel()}
-      </main>
-    </div>
+    <ToastProvider>
+      <div className="flex h-screen bg-background">
+        <UnifiedDashboardSidebar />
+        <main className="flex-1 overflow-auto">
+          {renderPanel()}
+        </main>
+      </div>
+    </ToastProvider>
   );
 }

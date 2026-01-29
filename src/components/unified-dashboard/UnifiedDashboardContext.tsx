@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useToast } from './ToastProvider';
 
 interface ToolSummary {
   id: string;
@@ -39,6 +40,7 @@ interface UnifiedDashboardContextType {
 const UnifiedDashboardContext = createContext<UnifiedDashboardContextType | undefined>(undefined);
 
 export function UnifiedDashboardProvider({ children }: { children: React.ReactNode }) {
+  const { addToast } = useToast();
   const [tools, setTools] = useState<ToolSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
@@ -65,6 +67,11 @@ export function UnifiedDashboardProvider({ children }: { children: React.ReactNo
       }));
     } catch (error) {
       console.error('Failed to load tools:', error);
+      addToast({
+        title: 'Error loading tools',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
