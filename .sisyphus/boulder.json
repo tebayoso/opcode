@@ -1,8 +1,12 @@
 {
   "active_plan": "/media/tebayoso/linux-data/projects/tebayoso/opcode/.sisyphus/plans/master-plan.md",
   "started_at": "2026-01-29T19:11:55.777Z",
+  "completed_at": "2026-01-29T21:45:00.000Z",
   "session_ids": [
     "ses_3f4e6da33ffeJBBX6H00nW9Rn5"
   ],
-  "plan_name": "master-plan"
+  "plan_name": "master-plan",
+  "status": "completed",
+  "tasks_completed": 23,
+  "tasks_total": 23
 }
